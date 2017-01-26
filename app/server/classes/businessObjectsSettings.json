@@ -1,0 +1,116 @@
+{
+
+    "account": {
+        "operating": {
+            "journal": "STRIPE",
+            "accountGL": "10341",
+            "bankGL": "10204",
+            "processorFeeGL": "60301",
+            "taxGL": "23001",
+            "processorVend": "VEND00534"
+        },
+        "shop": {
+            "journal": "STRIPE",
+            "accountGL": "12510",
+            "bankGL": "10204",
+            "processorFeeGL": "60301",
+            "taxGL": "23001",
+            "processorVend": "VEND00534"
+        }
+    },
+    "objects": {
+
+        "repair": {
+
+            "vendor": "",
+            "department": "",
+            "channel": "30",
+            "laborCost": "40",
+
+            "collection": {
+
+                "accounts": {
+                    "sale": "43111",
+                    "part": "43115",
+                    "labor": "51035"
+                },
+                "entryDirection": {
+                    "chargeCash": "debit",
+                    "feeCash": "debit",
+                    "transferCash": "credit",
+                    "tax": "credit",
+                    "sale": "credit",
+                    "part": "debit",
+                    "labor": "debit",
+                    "feeIncurred": "debit",
+                    "feeCharged": "credit"
+                }
+            },
+            "refund": {
+
+                "accounts": {
+                    "sale": "43151",
+                    "part": "43115",
+                    "labor": "51035"
+                },
+                "entryDirection": {
+                    "chargeCash": "credit",
+                    "feeCash": "credit",
+                    "transferCash": "debit",
+                    "tax": "debit",
+                    "sale": "debit",
+                    "part": "credit",
+                    "labor": "credit",
+                    "feeIncurred": "credit",
+                    "feeCharged": "debit"
+                }
+            }
+
+        },
+        "bankTransfer": {
+            "toBank": {
+                "entryDirection": {
+                    "bank": "debit",
+                    "platform": "credit"
+                }
+            },
+            "toPlatform": {
+                "entryDirection": {
+                    "bank": "credit",
+                    "platform": "debit"
+                }
+            }
+        },
+        "discountedRepairTransfer": {
+
+            "vendor": "",
+            "department": "",
+            "channel": "30",
+
+            "collection": {
+
+                "accounts": {
+                    "part": "43115",
+                    "labor": "51035"
+                },
+                "entryDirection": {
+                    "part": "debit",
+                    "labor": "debit",
+                    "cash": "credit"
+                }
+            },
+            "refund": {
+
+                "accounts": {
+                    "part": "43151",
+                    "labor": "51035"
+                },
+                "entryDirection": {
+                    "part": "credit",
+                    "labor": "credit",
+                    "cash": "debit"
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "acc-tools",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www",
+    "dev": "USE_LOCAL_ENV=true node ./bin/www",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "USE_LOCAL_ENV=true mocha --recursive --timeout 45000 ./tests/server/unit",
+    "test:integration": "USE_LOCAL_ENV=true mocha --recursive --timeout 45000 ./tests/server/integration"
+  },
+  "dependencies": {
+    "body-parser": "~1.15.2",
+    "cookie-parser": "~1.4.3",
+    "debug": "~2.2.0",
+    "express": "~4.14.0",
+    "jade": "~1.11.0",
+    "morgan": "~1.7.0",
+    "request": "^2.79.0",
+    "stripe": "^4.14.0",
+    "xml2js": "^0.4.17"
+  },
+  "devDependencies": {
+    "dotenv": "^2.0.0",
+    "mocha": "^3.2.0"
+  }
+}
