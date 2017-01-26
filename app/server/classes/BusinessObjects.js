@@ -334,7 +334,6 @@ class Repair extends BusinessObject {
                 var part = 0;
             }
 
-            //TODO: remove hard coding of accounts (move to BOsettings)
             if (chargeNetOfTax > 0) {
                 entry.addLine(boSettings.objects.repair[direction].entryDirection.chargeCash, boSettings.account.operating.accountGL, '', chargeNetOfTax, '', '', memo, '', '', '', '', '');
             }
