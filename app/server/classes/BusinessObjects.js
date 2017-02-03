@@ -83,7 +83,7 @@ class Repair extends BusinessObject {
 
     // Different repair types have different sets of logic required to gather all relevant properties required to
     // create an accounting entry
-    prepareEntry() {
+    setProps() {
 
         return new Promise((resolve, reject) => {
 
@@ -101,15 +101,16 @@ class Repair extends BusinessObject {
                     case '0':
 
                         //Depending on source, reach out to that source to set payout related properties
-                        setPayoutDetailsPromise = this.setPayoutDetails(this.props.transferID, 'stripe');
+                        setPayoutDetailsPromise = this.setPayoutRefundDetails(this.props.transferID, 'stripe');
 
                         //Stripe metadata does have tax amount.  However, this does not always match actual amount charged
-                        setTaxDetailsPromise = this.setTaxDetails(this.props.taxCollectionID, 'stripe');
+                        setTaxDetailsPromise = this.setTaxRefundDetails(this.props.taxCollectionID, 'stripe');
+
                         break;
                     case '1':
 
                         //Depending on source, reach out to that source to set payout related properties
-                        setPayoutDetailsPromise = this.setPayoutDetails(this.props.transferID, 'stripe');
+                        setPayoutDetailsPromise = this.setPayoutRefundDetails(this.props.transferID, 'stripe');
                         break;
                 }
 
@@ -138,12 +139,11 @@ class Repair extends BusinessObject {
 
             //Wait for all promises to resolve. These promises set values, so we do not need to take action from results
             Promise.all([setZipPromise, setProcessingFeePromise, setPayoutDetailsPromise, setTaxDetailsPromise])
-                .then( ()=> {
+                .then(()=> {
                     resolve();
                 })
-                .catch( err =>{
+                .catch(err => {
                     reject('Error during prepareEntry(), failed to resolve Promise.all. Err message: ' + err);
-
                 })
         });
     }
@@ -172,11 +172,11 @@ class Repair extends BusinessObject {
         return new Promise((resolve, reject) => {
             this.determineProcessingFeeDetails(id, source)
                 .then((processingFeeDetails)=> {
-
                     this.props.processingFeeAmount = this.convertToDollar(processingFeeDetails.fee);
-
                     resolve();
-
+                })
+                .catch( err =>{
+                    reject(err)
                 })
         })
     }
@@ -208,8 +208,26 @@ class Repair extends BusinessObject {
             this.determinePayoutDetails(id, source)
                 .then((txnDetails)=> {
                     this.props.payoutAmount = this.convertToDollar(txnDetails.amount);
-                    this.props.payoutID = txnDetails.balance_transaction;
+                    this.props.payoutTxnID = txnDetails.balance_transaction;
                     resolve();
+                })
+                .catch( err =>{
+                    reject(err)
+                })
+        })
+    }
+
+    setPayoutRefundDetails(id, source) {
+        return new Promise((resolve, reject) => {
+            this.determinePayoutDetails(id, source)
+                .then( txnDetails => {
+
+                    this.props.refundDetails.payoutAmount = this.convertToDollar(txnDetails.reversals.data[0].amount);
+                    this.props.refundDetails.payoutTxnID = txnDetails.reversals.data[0].balance_transaction;
+                    resolve();
+                })
+                .catch( err =>{
+                    reject(err)
                 })
         })
     }
@@ -239,16 +257,34 @@ class Repair extends BusinessObject {
 
     setTaxDetails(id, source) {
         return new Promise((resolve, reject) => {
-            this.determineTaxDetails(id, source)
-                .then((taxDetails)=> {
-                    this.props.taxAmount = this.convertToDollar(taxDetails.amount);
-                    this.props.taxID = taxDetails.balance_transaction;
+            this.determineHeldAmount(id, source)
+                .then( taxDetails => {
+                    this.props.amountHeld = this.convertToDollar(taxDetails.amount);
+                    this.props.taxTxnID = taxDetails.balance_transaction;
                     resolve()
+                })
+                .catch( err =>{
+                    reject(err)
                 })
         })
     }
 
-    determineTaxDetails(id, source){
+    setTaxRefundDetails(id, source) {
+        return new Promise((resolve, reject) => {
+            this.determineHeldAmount(id, source)
+                .then( taxDetails => {
+
+                    this.props.refundDetails.amountHeld = this.convertToDollar(taxDetails.refunds.data[0].amount);
+                    this.props.refundDetails.taxTxnID = taxDetails.refunds.data[0].balance_transaction;
+                    resolve()
+                })
+                .catch( err =>{
+                    reject(err)
+                })
+        })
+    }
+
+    determineHeldAmount(id, source){
         return new Promise((resolve, reject) => {
             switch (source) {
                 case 'stripe':
@@ -275,13 +311,10 @@ class Repair extends BusinessObject {
             //Validate that isRefund flag is set and determine collection/refund
             //collection/refund will determine setting in businessObjects
             //set variables that depend on collection/refund
-
-            var year, month, day, direction, memo, chargeNetOfTax;
+            var year, month, day, direction, memo, chargeNetOfFee, chargeTxnID, appFeeTxnID, transferTxnID, amountHeld, amountPaid;
 
             if (this.props.isRefund) {
                 direction = 'refund';
-
-                console.log('RefundDetails: ', this.props.refundDetails);
 
                 year = this.props.refundDetails.date.getFullYear();
                 //.getMonth() returns 0-11, so add 1
@@ -291,7 +324,15 @@ class Repair extends BusinessObject {
                 memo = 'REFUND: Repair: App Sale | Repair ID: ' + this.props.repairID + ' | Zip' +
                     ' Code: ' + this.props.zip;
 
-                chargeNetOfTax = (this.convertToDollar(this.props.refundDetails.amount) - this.props.processingFeeAmount).toFixed(2);
+                chargeNetOfFee = (this.convertToDollar(this.props.refundDetails.amount) - this.props.processingFeeAmount).toFixed(2);
+
+                chargeTxnID = this.props.refundDetails.txnID;
+                appFeeTxnID = this.props.refundDetails.taxTxnID;
+                transferTxnID = this.props.refundDetails.payoutTxnID;
+
+                amountHeld = this.props.refundDetails.amountHeld;
+                amountPaid = this.props.refundDetails.payoutAmount;
+
 
             } else {
                 direction = 'collection';
@@ -304,7 +345,14 @@ class Repair extends BusinessObject {
                 memo = 'Repair: App Sale | Repair ID: ' + this.props.repairID + ' | Zip' +
                     ' Code: ' + this.props.zip;
 
-                chargeNetOfTax = (this.convertToDollar(this.props.chargeAmount) - this.props.processingFeeAmount).toFixed(2);
+                chargeNetOfFee = (this.convertToDollar(this.props.chargeAmount) - this.props.processingFeeAmount).toFixed(2);
+
+                chargeTxnID = this.props.txnID;
+                appFeeTxnID = this.props.taxTxnID;
+                transferTxnID = this.props.payoutTxnID;
+
+                amountHeld = this.props.amountHeld;
+                amountPaid = this.props.payoutAmount;
 
             }
 
@@ -315,39 +363,43 @@ class Repair extends BusinessObject {
             //journal, memo, year, month, day, reference
             entry.setHeader(boSettings.account.operating.journal, memo, year, month, day, this.props.chargeID);
 
+            var netOfTaxAmount = (this.convertToDollar(this.props.chargeAmount) - this.props.tax).toFixed(2);
 
-            var netTransferAmount = (this.convertToDollar(this.props.chargeAmount) - this.props.tax).toFixed(2);
+            var netPaid = (amountPaid - amountHeld).toFixed(2);
 
             //Default amount charged to technician = $0
             var techFee = 0;
             var labor = 0;
+            var part = 0;
 
             //taxAmount = amount withheld from payout, tax equals amount as a property
             //Any amount withheld greater than tax amount is amount charged to technician
-            techFee = (this.props.taxAmount - this.props.tax).toFixed(2);
+            if ((this.props.amountHeld - this.props.tax).toFixed(2) > 0) {
+                techFee = (this.props.amountHeld - this.props.tax).toFixed(2)
+            }
 
-            //If payoutAmount is $0, part & labor should be $0 (and will not be added to transaction)
-            if (this.props.payoutAmount > 0) {
+            var netPaidWithFee = (amountPaid - amountHeld + Number(techFee)).toFixed(2);
+
+            if (netPaidWithFee > 0) {
                 labor = 40;
-                var part = (netTransferAmount - labor).toFixed(2);
-            } else {
-                var part = 0;
+                part = (netPaidWithFee - labor).toFixed(2);
             }
 
-            if (chargeNetOfTax > 0) {
-                entry.addLine(boSettings.objects.repair[direction].entryDirection.chargeCash, boSettings.account.operating.accountGL, '', chargeNetOfTax, '', '', memo, '', '', '', '', '');
-            }
-            if (this.props.taxAmount > 0) {
-                entry.addLine(boSettings.objects.repair[direction].entryDirection.feeCash, boSettings.account.operating.accountGL, '', this.props.taxAmount, '', '', memo, '', '', '', '', '');
-            }
-            if (this.props.payoutAmount > 0) {
-                entry.addLine(boSettings.objects.repair[direction].entryDirection.transferCash, boSettings.account.operating.accountGL, '', this.props.payoutAmount, '', '', memo, '', '', '', '', '');
-            }
+            //addLine(type, acct, doc, amt, dept, channel, memo, vend, cust, emp, prj, item)
+            //if (chargeNetOfTax > 0) {
+                entry.addLine(boSettings.objects.repair[direction].entryDirection.chargeCash, boSettings.account.operating.accountGL, chargeTxnID, chargeNetOfFee, '', '', memo, '', '', '', '', '');
+            //}
+            //if (this.props.taxAmount > 0) {
+                entry.addLine(boSettings.objects.repair[direction].entryDirection.feeCash, boSettings.account.operating.accountGL, appFeeTxnID, amountHeld, '', '', memo, '', '', '', '', '');
+            //}
+           // if (this.props.payoutAmount > 0) {
+                entry.addLine(boSettings.objects.repair[direction].entryDirection.transferCash, boSettings.account.operating.accountGL, transferTxnID, amountPaid, '', '', memo, '', '', '', '', '');
+           // }
             if (this.props.tax > 0) {
                 entry.addLine(boSettings.objects.repair[direction].entryDirection.tax, boSettings.account.operating.taxGL, '', this.props.tax, '', '', memo, '', '', '', '', '');
             }
-            if (netTransferAmount > 0) {
-                entry.addLine(boSettings.objects.repair[direction].entryDirection.sale, boSettings.objects.repair[direction].accounts.sale, '', netTransferAmount, '', boSettings.objects.repair.channel, memo, '', '', '', '', '');
+            if (netOfTaxAmount > 0) {
+                entry.addLine(boSettings.objects.repair[direction].entryDirection.sale, boSettings.objects.repair[direction].accounts.sale, '', netOfTaxAmount, '', boSettings.objects.repair.channel, memo, '', '', '', '', '');
             }
             if (part > 0) {
                 entry.addLine(boSettings.objects.repair[direction].entryDirection.part, boSettings.objects.repair[direction].accounts.part, '', part, '', boSettings.objects.repair.channel, memo, '', '', '', '', '');
@@ -373,7 +425,6 @@ class Repair extends BusinessObject {
                     resolve(resObj);
                 })
                 .catch(rejObj => {
-                    console.log('Caught rejection from entry.sendRequest: ', rejObj);
                     reject(rejObj);
                 })
         });

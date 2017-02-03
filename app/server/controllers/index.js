@@ -21,19 +21,26 @@ exports.processEvent = (req, res) => {
 
         case 'repair':
 
+            //TODO we currently get refund details here, but we also need to make API calls to get transfer details
+            // & application fee details (txn ID and amounts) of REFUNDS
+            // call get transfer then reference: .reversals.data[0].balance_transaction & .reversals.data[0].amount
+
+
             //Determine if refunds variables should be passed into new BO
             var getRefundDetails = () => {
                 if (incomingEvent.getEventDetails().refunded) {
                     return {
-                            date: new Date(incomingEvent.getEventDetails().refunds.data[0].created * 1000),
-                            amount: incomingEvent.getEventDetails().refunds.data[0].amount,
-                            ID: incomingEvent.getEventDetails().refunds.data[0].id,
-                            txnID: incomingEvent.getEventDetails().refunds.data[0].balance_transaction
+                        date: new Date(incomingEvent.getEventDetails().refunds.data[0].created * 1000),
+                        amount: incomingEvent.getEventDetails().refunds.data[0].amount,
+                        ID: incomingEvent.getEventDetails().refunds.data[0].id,
+                        txnID: incomingEvent.getEventDetails().refunds.data[0].balance_transaction
                     }
                 } else {
                     return ''
                 }
             };
+            
+            //var getTransferDetails = () => {}
 
             // Create new repair object
             var BO = new BusinessObject.Repair({
@@ -49,14 +56,16 @@ exports.processEvent = (req, res) => {
                 latitude:        incomingEvent.getEventDetails().metadata.latitude,
                 longitude:       incomingEvent.getEventDetails().metadata.longitude,
                 payoutAmount:    0,
-                taxAmount:       0,
+                amountHeld:      0,
                 isRefund:        incomingEvent.getEventDetails().refunded,
                 refundDetails:   getRefundDetails()
             });
 
             // Call 3rd party APIs to set properties that will be used to createAccountingEntry
-            BO.prepareEntry()
+            // These set properties that were not already set in the constructor by passing Event properties in
+            BO.setProps()
                 .then( () =>{
+
                     BO.createAccountingEntry()
                         .then( () => {
                             res.status(200).send('Entry Posted')
@@ -94,8 +103,6 @@ exports.processEvent = (req, res) => {
             break;
 
         case 'repairTransfer':
-
-            console.log('Received BO request for repairTransfer');
 
             var discountedRepairTransfer = new BusinessObject.DiscountedRepairTransfer({
                 txnID:           incomingEvent.getEventDetails().balance_transaction,
