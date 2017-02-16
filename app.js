@@ -10,7 +10,7 @@ var bodyParser = require('body-parser');
 var path = require('path');
 
 var index = require('./routes/index');
-
+var entry = require('./app/server/entry');
 
 var app = express();
 
@@ -23,6 +23,9 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use('/', index);
+//app.use('/', entry);
+
+//TODO: cron is declared in controller.  I should export that function into a new file called "
 
 
 // catch 404 and forward to error handler

@@ -7,7 +7,8 @@
     "dev": "USE_LOCAL_ENV=true node ./bin/www",
     "test": "npm run test:unit && npm run test:integration",
     "test:unit": "USE_LOCAL_ENV=true mocha --recursive --timeout 45000 ./tests/server/unit",
-    "test:integration": "USE_LOCAL_ENV=true mocha --recursive --timeout 45000 ./tests/server/integration"
+    "test:integration": "USE_LOCAL_ENV=true mocha --recursive --timeout 45000 ./tests/server/integration",
+    "entry": "node ./app/server/entry.js"
   },
   "dependencies": {
     "body-parser": "~1.15.2",
@@ -16,6 +17,7 @@
     "express": "~4.14.0",
     "jade": "~1.11.0",
     "morgan": "~1.7.0",
+    "querystring": "^0.2.0",
     "request": "^2.79.0",
     "stripe": "^4.14.0",
     "xml2js": "^0.4.17"

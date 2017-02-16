@@ -42,11 +42,10 @@ class IntacctRequest {
                                         //2. check result status
                                         switch (convertedBody.response.operation[0].result[0].status[0]) {
                                             case 'failure':
-                                                reject('Failed:' +
-                                                    ' ' + convertedBody.response.operation[0].result[0].errormessage[0].error[0] );
+                                                reject(convertedBody.response.operation[0].result[0].errormessage[0] );
                                                 break;
                                             case 'success':
-                                                resolve('Successfully posted to intacct');
+                                                resolve(convertedBody);
                                                 break;
                                         }
                                         break;
@@ -72,7 +71,16 @@ class IntacctRequest {
         });
     }
 
+    //Replace function to be used to swap object properties into XML template
+    _swapXMLwithJSON(replaceThisXML, replaceWithObj) {
 
+        Object.keys(replaceWithObj).forEach(key => {
+
+            replaceThisXML = replaceThisXML.replace(new RegExp(key, 'g'), replaceWithObj[key]);
+        });
+
+        return replaceThisXML;
+    };
 }
 
 class GlEntry extends IntacctRequest {
@@ -176,25 +184,10 @@ class GlEntry extends IntacctRequest {
     //Method to convert entryString to XML (Returns XML string)
     convertToIntacctXML() {
 
-        console.log('Attempting to convert to XML');
-
-        //Replace function to be used to swap object properties into XML template
-        var replaceAll = (replaceThisXML, replaceWithObj) => {
-
-            Object.keys(replaceWithObj).forEach(key => {
-
-                replaceThisXML = replaceThisXML.replace(new RegExp(key, 'g'), replaceWithObj[key]);
-            });
-
-            return replaceThisXML;
-        };
-
         //-------Entry Header-------
         //Includes control portion of header
-
         let convertedHeader = (() => {
-
-            return replaceAll(intacctTemplates.IntacctControl + intacctTemplates.IntacctHeader, this.entryHeader);
+            return super._swapXMLwithJSON(intacctTemplates.IntacctControl + intacctTemplates.IntacctHeader, this.entryHeader);
         })();
 
         //--------Entry Body--------
@@ -230,13 +223,12 @@ class GlEntry extends IntacctRequest {
                     '</glentry>';
             }
 
-            return replaceAll(bodyTemplate, this.entryBody);
+            return super._swapXMLwithJSON(bodyTemplate, this.entryBody);
         })();
 
         //--------Entry Footer--------
 
         let convertedFooter = (() => {
-
             return intacctTemplates.IntacctFooter;
         })();
 
@@ -245,8 +237,32 @@ class GlEntry extends IntacctRequest {
     };
 }
 
+class Query extends IntacctRequest {
+    //constructor(intacctObject, intacctField, reference, returnFields) {
+    constructor(intacctObject, query, returnFields) {
+
+        //TODO: need to make required parameter check more robust
+        if (arguments.length < 2) throw new Error();
+
+        super();
+
+        this.searchProps = {
+            SenderPassVar: process.env.SENDERPASS,
+            LoginPassVar: process.env.INTACCTPASS,
+            CompanyVar: process.env.INTACCT_ENV,
+            LocationVar: '100',
+            ObjectVar: intacctObject,
+            //QueryVar: "(" + intacctField + " = '" + reference + "')",
+            QueryVar: query,
+            ReturnFieldsVar: returnFields
+        };
+
+        this.xmlQuery = super._swapXMLwithJSON(intacctTemplates.IntacctReadQuery, this.searchProps)
+    }
+}
 
 module.exports = {
-    GlEntry: GlEntry
+    GlEntry: GlEntry,
+    Query: Query
 };
 

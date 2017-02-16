@@ -16,6 +16,14 @@
             "processorFeeGL": "60301",
             "taxGL": "23001",
             "processorVend": "VEND00534"
+        },
+        "paypal": {
+            "journal": "CDJ",
+            "accountGL": "10301",
+            "bankGL": "10204",
+            "processorFeeGL": "60301",
+            "taxGL": "23001",
+            "processorVend": "VEND00301"
         }
     },
     "objects": {

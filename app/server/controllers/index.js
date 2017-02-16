@@ -2,8 +2,15 @@
 
 var RequestEvent = require('../classes/RequestEvent').RequestEvent;
 var BusinessObject = require('../classes/BusinessObjects');
+var Cron = require('../classes/Cron');
 
+var transactionSearches = require('./transactionSearches');
 
+//For testing
+var intacct = require('../libraries/intacct/index');
+var paypal = require('../libraries/paypal/index');
+
+//This function is called by routes on a network request
 exports.processEvent = (req, res) => {
 
     // Declare new Event Object
@@ -25,7 +32,6 @@ exports.processEvent = (req, res) => {
             // & application fee details (txn ID and amounts) of REFUNDS
             // call get transfer then reference: .reversals.data[0].balance_transaction & .reversals.data[0].amount
 
-
             //Determine if refunds variables should be passed into new BO
             var getRefundDetails = () => {
                 if (incomingEvent.getEventDetails().refunded) {
@@ -39,8 +45,6 @@ exports.processEvent = (req, res) => {
                     return ''
                 }
             };
-            
-            //var getTransferDetails = () => {}
 
             // Create new repair object
             var BO = new BusinessObject.Repair({
@@ -82,15 +86,25 @@ exports.processEvent = (req, res) => {
 
         case 'bankTransfer':
 
+            //TODO: move this function somewhere else maybe into a utility function file
+            //Other business objects currently rely on this conversion in the object need to remove
+            var convertToDollar = (amount) => {
+                return (Math.abs(amount) / 100);
+            }
+
             var bankTransfer = new BusinessObject.BankTransfer({
                 txnID:           incomingEvent.getEventDetails().balance_transaction,
                 description:     incomingEvent.getEventDetails().description,
                 source:          incomingEvent.req.params.source,
                 subSource:       incomingEvent.req.params.subSource,
                 transferID:      incomingEvent.getEventDetails().id,
-                amount:    incomingEvent.getEventDetails().amount,
-                date:      new Date(incomingEvent.getEventDetails().created * 1000)
+                amount:    convertToDollar(incomingEvent.getEventDetails().amount),
+                date:      new Date(incomingEvent.getEventDetails().created * 1000),
+                memo:       "Cash transfer | Account: " + this.props.subSource + " | Description: " +
+                            this.props.description
             });
+
+
 
             bankTransfer.createAccountingEntry()
                 .then(()=>{
@@ -128,5 +142,35 @@ exports.processEvent = (req, res) => {
     }
 };
 
+//This function is called by entry.js on server boot
+exports.processCron = () => {
 
+    var delayedFunc1 = () => {
+
+        console.log('Process 1 fired!')
+    };
+
+    var delayedFunc2 = () => {
+
+        console.log('Process 2 fired!')
+    };
+
+    //TODO: need to set cron delay here.  This should probably be set with a config file.  The UI will eventually
+    // show a list of crons displaying as "active" or "inactive" & allow user to change the cron delay.
+    var cron1 = new Cron.Cron(10000);
+
+    cron1.addProcess('function1', delayedFunc1);
+    cron1.addProcess('function2', delayedFunc2);
+
+    //Add Paypal Transferes query to cron. This function does the following:
+    //1. Search PayPal for recent transfer transactions
+    //2. Identifies which do not exist in Intacct
+    //3. Creates Transfer Business Objects for them
+    //4. Posts them to accounting system
+    //cron1.addProcess('paypalTransfers', transactionSearches.payPalTransfers);
+
+    //Start the cron
+    //cron1.startCron();
+
+};
 

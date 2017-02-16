@@ -2,7 +2,7 @@
 
 var request = require('request');
 
-var intacctTools = require('../libraries/intacct-tools/index');
+var intacctTools = require('../libraries/intacct/index');
 var boSettings = require('./businessObjectsSettings');
 
 var stripeOperating = require("stripe")(
@@ -324,6 +324,7 @@ class Repair extends BusinessObject {
                 memo = 'REFUND: Repair: App Sale | Repair ID: ' + this.props.repairID + ' | Zip' +
                     ' Code: ' + this.props.zip;
 
+                //TODO: remove convertToDollar this needs to happen before declaring the BO
                 chargeNetOfFee = (this.convertToDollar(this.props.refundDetails.amount) - this.props.processingFeeAmount).toFixed(2);
 
                 chargeTxnID = this.props.refundDetails.txnID;
@@ -345,6 +346,7 @@ class Repair extends BusinessObject {
                 memo = 'Repair: App Sale | Repair ID: ' + this.props.repairID + ' | Zip' +
                     ' Code: ' + this.props.zip;
 
+                //TODO: remove convertToDollar this needs to happen before declaring the BO
                 chargeNetOfFee = (this.convertToDollar(this.props.chargeAmount) - this.props.processingFeeAmount).toFixed(2);
 
                 chargeTxnID = this.props.txnID;
@@ -440,14 +442,12 @@ class BankTransfer extends BusinessObject {
 
     }
 
-    //Determine if source is supported
-
-    //Validate transaction by reaching out to that source
-
     createAccountingEntry(){
         return new Promise((resolve, reject) => {
 
-            //TODO need to make sure this.props.subSource is valid before trying to use
+            console.log('props: ', this.props);
+
+            //TODO add property validation
 
             var entry = new intacctTools.GlEntry();
 
@@ -457,10 +457,10 @@ class BankTransfer extends BusinessObject {
             var month = this.props.date.getMonth() + 1;
             var day = this.props.date.getDate();
 
-            var amount = this.convertToDollar(this.props.amount);
+            var amount = this.props.amount;
             var debitGL, creditGL, transferDirection;
 
-            //Determine if the transfer is stripe --> bank or bank --> stripe, this changes account to debit &
+            //Determine if the transfer is platform --> bank or bank --> platform, this changes account to debit &
             // credit
             if (amount < 0) {
                 amount = -amount;
@@ -469,16 +469,13 @@ class BankTransfer extends BusinessObject {
                 transferDirection = "toBank"
             }
 
-            var memo = "Stripe bank transfer | Stripe Account: " + this.props.subSource + " | Stripe" +
-                " Description: " + this.props.description;
-
-            entry.setHeader(boSettings.account.operating.journal, memo, year, month, day, this.props.transferID);
+            entry.setHeader(boSettings.account[this.props.subSource].journal, this.props.memo, year, month, day, this.props.transferID);
 
             //Bank
-            entry.addLine(boSettings.objects.bankTransfer[transferDirection].entryDirection.bank, boSettings.account[this.props.subSource].bankGL, this.props.txnID, amount, '', '', memo, '', '', '', '', '');
+            entry.addLine(boSettings.objects.bankTransfer[transferDirection].entryDirection.bank, boSettings.account[this.props.subSource].bankGL, this.props.txnID, amount, '', '', this.props.memo, '', '', '', '', '');
 
             //Platform
-            entry.addLine(boSettings.objects.bankTransfer[transferDirection].entryDirection.platform, boSettings.account[this.props.subSource].accountGL, this.props.txnID, amount, '', '', memo, '', '', '', '', '');
+            entry.addLine(boSettings.objects.bankTransfer[transferDirection].entryDirection.platform, boSettings.account[this.props.subSource].accountGL, this.props.txnID, amount, '', '', this.props.memo, '', '', '', '', '');
 
 
             var convertedEntry = entry.convertToIntacctXML();
@@ -514,6 +511,7 @@ class DiscountedRepairTransfer extends BusinessObject {
             var month = this.props.date.getMonth() + 1;
             var day = this.props.date.getDate();
 
+            //TODO: remove convertToDollar this needs to happen before declaring the BO
             var amount = this.convertToDollar(this.props.amount).toFixed(2);
             var laborCost = Number(boSettings.objects.repair.laborCost).toFixed(2);
             var partCost = (amount - laborCost).toFixed(2);
