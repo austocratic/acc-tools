@@ -11,6 +11,7 @@ class Cron {
 	_iterateAllProcesses() {
 		this.processList.forEach( process => {
 			process.action();
+			console.log('Called the action of process named: ', process.name)
 		})
 	}
 
@@ -19,7 +20,7 @@ class Cron {
 			this._iterateAllProcesses()
 		}, this.delay);
 
-		console.log('Started interval: ', this.interval);
+		console.log('Started interval');
 	}
 
 	stopCron() {

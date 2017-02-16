@@ -147,17 +147,17 @@ exports.processCron = () => {
 
     var delayedFunc1 = () => {
 
-        console.log('Cron Process 1 fired!')
+        console.log('Test Cron Process 1 fired!')
     };
 
     var delayedFunc2 = () => {
 
-        console.log('Cron Process 2 fired!')
+        console.log('Test Cron Process 2 fired!')
     };
 
     //TODO: need to set cron delay here.  This should probably be set with a config file.  The UI will eventually
     // show a list of crons displaying as "active" or "inactive" & allow user to change the cron delay.
-    var cron1 = new Cron.Cron(10000);
+    var cron1 = new Cron.Cron(43200000);
 
     cron1.addProcess('function1', delayedFunc1);
     cron1.addProcess('function2', delayedFunc2);
@@ -167,7 +167,7 @@ exports.processCron = () => {
     //2. Identifies which do not exist in Intacct
     //3. Creates Transfer Business Objects for them
     //4. Posts them to accounting system
-    //cron1.addProcess('paypalTransfers', transactionSearches.payPalTransfers);
+    cron1.addProcess('paypalTransfers', transactionSearches.payPalTransfers);
 
     //Start the cron
     cron1.startCron();
