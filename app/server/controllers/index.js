@@ -147,12 +147,12 @@ exports.processCron = () => {
 
     var delayedFunc1 = () => {
 
-        console.log('Process 1 fired!')
+        console.log('Cron Process 1 fired!')
     };
 
     var delayedFunc2 = () => {
 
-        console.log('Process 2 fired!')
+        console.log('Cron Process 2 fired!')
     };
 
     //TODO: need to set cron delay here.  This should probably be set with a config file.  The UI will eventually
@@ -170,7 +170,7 @@ exports.processCron = () => {
     //cron1.addProcess('paypalTransfers', transactionSearches.payPalTransfers);
 
     //Start the cron
-    //cron1.startCron();
+    cron1.startCron();
 
 };
 

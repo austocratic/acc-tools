@@ -57,32 +57,6 @@ class Process {
 	//TODO: add an 'active' property.  cron will only call Processes with active = true
 }
 
-var delayedFunc1 = () => {
-
-	console.log('Process 1 fired!')
-};
-
-var delayedFunc2 = () => {
-
-	console.log('Process 2 fired!')
-};
-
-/*
-var cron1 = new Cron(500);
-
-cron1.addProcess('delayedFunc1', delayedFunc1);
-cron1.addProcess('delayedFunc2', delayedFunc2);
-
-cron1.startCron();
-
-
-
-
-setTimeout(function() {
-	console.log('Stopping Processes');
-	cron1.stopCron();
-}, 3000);*/
-
 
 module.exports = {
 	Cron: Cron

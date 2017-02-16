@@ -420,8 +420,6 @@ class Repair extends BusinessObject {
             //Convert to XML
             var convertedEntry = entry.convertToIntacctXML();
 
-            console.log('Accounting entry: ', convertedEntry);
-
             entry.sendRequest(convertedEntry)
                 .then( resObj => {
                     resolve(resObj);
@@ -445,7 +443,6 @@ class BankTransfer extends BusinessObject {
     createAccountingEntry(){
         return new Promise((resolve, reject) => {
 
-            console.log('props: ', this.props);
 
             //TODO add property validation
 
@@ -477,10 +474,7 @@ class BankTransfer extends BusinessObject {
             //Platform
             entry.addLine(boSettings.objects.bankTransfer[transferDirection].entryDirection.platform, boSettings.account[this.props.subSource].accountGL, this.props.txnID, amount, '', '', this.props.memo, '', '', '', '', '');
 
-
             var convertedEntry = entry.convertToIntacctXML();
-
-            console.log('Create transfer entry: ', convertedEntry);
 
             entry.sendRequest(convertedEntry)
                 .then( resObj => {
@@ -538,8 +532,6 @@ class DiscountedRepairTransfer extends BusinessObject {
             }
 
             var convertedEntry = entry.convertToIntacctXML();
-
-            console.log('Create transfer entry: ', convertedEntry);
 
             entry.sendRequest(convertedEntry)
                 .then( resObj => {

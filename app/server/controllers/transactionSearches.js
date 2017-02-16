@@ -156,7 +156,6 @@ exports.payPalTransfers = () => {
 
 							query.sendRequest(query.xmlQuery)
 								.then(res => {
-									console.log('Resolving Intacct response: ', res.response.operation[0].result[0].data[0].$.count);
 									resolve({input: id, response: res})
 								})
 								.catch(err => {
