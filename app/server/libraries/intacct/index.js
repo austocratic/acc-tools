@@ -99,7 +99,6 @@ class GlEntry extends IntacctRequest {
 
         //Keep track of the number of lines in the entry string
         this.lineCount = 0;
-
     }
 
     //Add header line to the entryString
@@ -176,10 +175,6 @@ class GlEntry extends IntacctRequest {
         //Add the new line properties into the running entryBody property
         this.entryBody = Object.assign(this.entryBody, entryLine);
     };
-
-
-    //TODO: add remove line functionality
-    removeLine(){}
 
     //Method to convert entryString to XML (Returns XML string)
     convertToIntacctXML() {

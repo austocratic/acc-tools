@@ -1,4 +1,5 @@
 
+
 //Set environment variables based on local .env file if USE_LOCAL_ENV is true
 //dev script sets USE_LOCAL_ENV, start does not
 if(process.env.USE_LOCAL_ENV) {
@@ -23,10 +24,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use('/', index);
-//app.use('/', entry);
-
-//TODO: cron is declared in controller.  I should export that function into a new file called "
-
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

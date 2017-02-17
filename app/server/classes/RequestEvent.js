@@ -13,10 +13,10 @@ class RequestEvent {
         this.req = req;
 
         //Use business logic to determine "businessObject"  This "businessObject" property will be referenced later
-        this.setBusinessObject();
+        this._setBusinessObject();
     }
 
-    setBusinessObject() {
+    _setBusinessObject() {
        this.businessObject = this.determineBusinessObject(this.req.params.source, this.req.body);
     }
 

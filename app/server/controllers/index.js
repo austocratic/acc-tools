@@ -75,6 +75,7 @@ exports.processEvent = (req, res) => {
                             res.status(200).send('Entry Posted')
                         })
                         .catch( rej => {
+                            console.log('Error creating entry: ', JSON.stringify(rej));
                             res.status(500).send('Failed to post transaction, error: ' + rej);
                         })
                 })
@@ -90,7 +91,7 @@ exports.processEvent = (req, res) => {
             //Other business objects currently rely on this conversion in the object need to remove
             var convertToDollar = (amount) => {
                 return (Math.abs(amount) / 100);
-            }
+            };
 
             var bankTransfer = new BusinessObject.BankTransfer({
                 txnID:           incomingEvent.getEventDetails().balance_transaction,
@@ -100,17 +101,16 @@ exports.processEvent = (req, res) => {
                 transferID:      incomingEvent.getEventDetails().id,
                 amount:    convertToDollar(incomingEvent.getEventDetails().amount),
                 date:      new Date(incomingEvent.getEventDetails().created * 1000),
-                memo:       "Cash transfer | Account: " + this.props.subSource + " | Description: " +
-                            this.props.description
+                memo:       "Cash transfer | Account: " + incomingEvent.req.params.subSource + " | Description: " +
+                            incomingEvent.getEventDetails().description
             });
-
-
 
             bankTransfer.createAccountingEntry()
                 .then(()=>{
                     res.status(200).send('Entry Posted')
                 })
                 .catch( rej =>{
+                    console.log('Error when creating entry: ', rej);
                     res.status(500).send('Failed to post transaction, error: ' + rej);
                 });
 

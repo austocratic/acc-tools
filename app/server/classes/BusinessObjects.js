@@ -355,7 +355,6 @@ class Repair extends BusinessObject {
 
                 amountHeld = this.props.amountHeld;
                 amountPaid = this.props.payoutAmount;
-
             }
 
             //Declare a new glEntry object
@@ -382,8 +381,15 @@ class Repair extends BusinessObject {
 
             var netPaidWithFee = (amountPaid - amountHeld + Number(techFee)).toFixed(2);
 
+            //What is this check for?
             if (netPaidWithFee > 0) {
+                //Standard labor rate
                 labor = 40;
+
+                if (netPaidWithFee < labor) {
+                    labor = 0;
+                }
+
                 part = (netPaidWithFee - labor).toFixed(2);
             }
 
@@ -433,16 +439,12 @@ class Repair extends BusinessObject {
 
 class BankTransfer extends BusinessObject {
     constructor(props) {
-
         super();
-
         this.props = props;
-
     }
 
     createAccountingEntry(){
         return new Promise((resolve, reject) => {
-
 
             //TODO add property validation
 
