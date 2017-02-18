@@ -7,7 +7,8 @@
             "bankGL": "10204",
             "processorFeeGL": "60301",
             "taxGL": "23001",
-            "processorVend": "VEND00534"
+            "processorVend": "VEND00534",
+            "chargebackChannel": "30"
         },
         "shop": {
             "journal": "STRIPE",
@@ -15,7 +16,8 @@
             "bankGL": "10204",
             "processorFeeGL": "60301",
             "taxGL": "23001",
-            "processorVend": "VEND00534"
+            "processorVend": "VEND00534",
+            "chargebackChannel": "20"
         },
         "paypal": {
             "journal": "CDJ",
@@ -23,7 +25,8 @@
             "bankGL": "10204",
             "processorFeeGL": "60301",
             "taxGL": "23001",
-            "processorVend": "VEND00301"
+            "processorVend": "VEND00301",
+            "chargebackChannel": ""
         }
     },
     "objects": {
@@ -119,6 +122,33 @@
                     "cash": "debit"
                 }
             }
+        },
+        "chargeback": {
+
+            "vendor": "",
+            "department": "",
+
+            "withdrawal": {
+                "accounts": {
+                    "gross": "43161"
+                },
+                "entryDirection": {
+                    "gross": "debit",
+                    "fee": "debit",
+                    "cash": "credit"
+                }
+            },
+            "reversal":{
+                "accounts": {
+                    "gross": "43161"
+                },
+                "entryDirection": {
+                    "gross": "credit",
+                    "fee": "credit",
+                    "cash": "debit"
+                }
+            }
+
         }
     }
 }

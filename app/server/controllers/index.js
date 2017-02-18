@@ -138,7 +138,69 @@ exports.processEvent = (req, res) => {
 
             break;
 
-        default: console.log('BO type not supported')
+        case 'chargeback':
+
+            //TODO: move this function somewhere else maybe into a utility function file
+            //Other business objects currently rely on this conversion in the object need to remove
+            var convertToDollar = amount => {
+                return ( amount / 100);
+            };
+
+            //Stripe dispute objects have a property of array of balance_transactions
+
+            var txnID, amount, description, disputeFeeAmount;
+
+            //If event is a funds withdrawn event, find the negative balanceTransaction
+            if (incomingEvent.getEventDetails().type = 'charge.dispute.withdrawn') {
+                incomingEvent.getEventDetails().balance_transactions.forEach(balanceTransaction => {
+                    if (balanceTransaction.amount < 0) {
+                        txnID = balanceTransaction.id;
+                        amount = balanceTransaction.net;
+                        description = balanceTransaction.description;
+                        disputeFeeAmount = balanceTransaction.fee;
+                    }
+                })
+            }
+
+            //If event is a funds withdrawn event, find the positive balanceTransaction
+            if (incomingEvent.getEventDetails().type = 'charge.dispute.funds_reinstated') {
+                incomingEvent.getEventDetails().balance_transactions.forEach(balanceTransaction => {
+                    if (balanceTransaction.amount > 0) {
+                        txnID = balanceTransaction.id;
+                        amount = balanceTransaction.net;
+                        description = balanceTransaction.description;
+                        disputeFeeAmount = balanceTransaction.fee;
+                    }
+                })
+            }
+
+            var chargeback = new BusinessObject.Chargeback({
+                txnID:            txnID, //ok
+                description:      description, //ok
+                source:           incomingEvent.req.params.source, //ok
+                subSource:        incomingEvent.req.params.subSource, //ok
+                id:               incomingEvent.getEventDetails().id, //ok
+                amount:           convertToDollar(amount), //ok
+                disputeFeeAmount: Math.abs(convertToDollar(disputeFeeAmount)), //ok
+                date:             new Date(incomingEvent.getEventDetails().created * 1000), //ok
+                memo:             "Chargeback | Account: " + incomingEvent.req.params.subSource + " | Description: " +
+                                  description
+            });
+
+            chargeback.createAccountingEntry()
+                .then(()=> {
+                    res.status(200).send('Entry Posted')
+                })
+                .catch(rej => {
+                    console.log('Error when creating entry: ', JSON.stringify(rej));
+                    res.status(500).send('Failed to post transaction, error: ' + rej);
+                });
+
+            break;
+
+        default:
+
+            res.status(220).send('BO type not supported');
     }
 };
 

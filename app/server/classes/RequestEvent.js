@@ -53,9 +53,11 @@ class RequestEvent {
 
                         break;
                     case 'charge.dispute.funds_withdrawn':
+                        businessType = 'chargeback';
 
                         break;
                     case 'charge.dispute.funds_reinstated':
+                        businessType = 'chargeback';
 
                         break;
                     //Only Bank transfers produce this event
@@ -67,8 +69,12 @@ class RequestEvent {
 
                         //When we pay the tech more than amount collected from customer, we generate a stand alone
                         // transfer.  These transfers always have "Repair" in the description
-                        if (reqBody.data.object.description.substring(0, 6) == 'Repair') {
-                            businessType = 'repairTransfer';
+                        try {
+                            if (reqBody.data.object.description.substring(0, 6) == 'Repair') {
+                                businessType = 'repairTransfer';
+                            }
+                        } catch(err){
+                            //Do nothing, leave default businessType undefined
                         }
 
                         break;

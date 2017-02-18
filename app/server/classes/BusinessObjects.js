@@ -381,10 +381,8 @@ class Repair extends BusinessObject {
 
             var netPaidWithFee = (amountPaid - amountHeld + Number(techFee)).toFixed(2);
 
-            //What is this check for?
             if (netPaidWithFee > 0) {
-                //Standard labor rate
-                labor = 40;
+                labor = boSettings.objects.repair.laborCost;
 
                 if (netPaidWithFee < labor) {
                     labor = 0;
@@ -546,9 +544,67 @@ class DiscountedRepairTransfer extends BusinessObject {
     }
 }
 
+
+class Chargeback extends BusinessObject {
+    constructor(props) {
+        super();
+
+        this.props = props;
+    }
+
+    createAccountingEntry(){
+        return new Promise((resolve, reject) => {
+
+            var entry = new intacctTools.GlEntry();
+
+            //Entry Specfic variables:
+            var year = this.props.date.getFullYear();
+            //.getMonth() returns 0-11, so add 1
+            var month = this.props.date.getMonth() + 1;
+            var day = this.props.date.getDate();
+
+            var amount = this.props.amount;
+            var chargebackDirection;
+
+            //Determine if the charegback with withdrawing or returning funds
+            if (amount < 0) {
+                amount = -amount;
+                chargebackDirection = "withdrawal"
+            } else {
+                chargebackDirection = "reversal"
+            }
+
+            var cashAmount = amount + this.props.disputeFeeAmount;
+
+            entry.setHeader(boSettings.account[this.props.subSource].journal, this.props.memo, year, month, day, this.props.id);
+
+            //Platform
+            entry.addLine(boSettings.objects.chargeback[chargebackDirection].entryDirection.cash, boSettings.account[this.props.subSource].accountGL, this.props.txnID, cashAmount, '', '', this.props.memo, '', '', '', '', '');
+
+            //Fee
+            entry.addLine(boSettings.objects.chargeback[chargebackDirection].entryDirection.fee, boSettings.account[this.props.subSource].processorFeeGL, this.props.txnID, this.props.disputeFeeAmount, '', boSettings.account[this.props.subSource].chargebackChannel, this.props.memo, boSettings.account[this.props.subSource].processorVend, '', '', '', '');
+
+            //Gross
+            entry.addLine(boSettings.objects.chargeback[chargebackDirection].entryDirection.gross, boSettings.objects.chargeback[chargebackDirection].accounts.gross, this.props.txnID, amount, '', boSettings.account[this.props.subSource].chargebackChannel, this.props.memo, '', '', '', '', '');
+
+            var convertedEntry = entry.convertToIntacctXML();
+
+            entry.sendRequest(convertedEntry)
+                .then( resObj => {
+                    resolve(resObj);
+                })
+                .catch(rejObj => {
+                    reject(rejObj);
+                })
+        })
+    }
+}
+
+
 module.exports = {
     BusinessObject: BusinessObject,
     Repair: Repair,
     BankTransfer: BankTransfer,
-    DiscountedRepairTransfer: DiscountedRepairTransfer
+    DiscountedRepairTransfer: DiscountedRepairTransfer,
+    Chargeback: Chargeback
 };
