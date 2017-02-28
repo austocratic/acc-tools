@@ -17,66 +17,58 @@ class RequestEvent {
     }
 
     _setBusinessObject() {
-       this.businessObject = this.determineBusinessObject(this.req.params.source, this.req.body);
+       this.controllerType = this.determineController(this.req.params.source, this.req.body);
     }
 
-    determineBusinessObject(source, reqBody) {
+    determineController(source, reqBody) {
 
         //Default value: not supported.  Overwrite businessType if supported
-        var businessType = undefined;
+        var controllerType = undefined;
 
         switch(source) {
             case 'stripe':
                 switch(reqBody.type) {
                     case 'charge.succeeded':
-
                         try {
                             if (reqBody.data.object.metadata.repair_id != null) {
-                                businessType = 'repair';
+                                controllerType = 'stripe.repair';
                             }
                         } catch(err){
                             //Do nothing, keep default of undefined
                         }
                         break;
                     case 'charge.refunded':
-
                         try {
                             if (reqBody.data.object.metadata.repair_id != null) {
-                                businessType = 'repair';
+                                controllerType = 'stripe.repair.refund';
                             }
                         } catch(err){
                             //Do nothing, keep default of undefined
                         }
-
                         break;
                     case 'charge.dispute.created':
-
+                        controllerType = 'chargebackAlert';
                         break;
                     case 'charge.dispute.funds_withdrawn':
-                        businessType = 'chargeback';
-
+                        controllerType = 'chargeback';
                         break;
                     case 'charge.dispute.funds_reinstated':
-                        businessType = 'chargeback';
-
+                        controllerType = 'chargeback';
                         break;
                     //Only Bank transfers produce this event
                     case 'transfer.paid':
-                        businessType = 'bankTransfer';
-
+                        controllerType = 'bankTransfer';
                         break;
                     case 'transfer.created':
-
                         //When we pay the tech more than amount collected from customer, we generate a stand alone
                         // transfer.  These transfers always have "Repair" in the description
                         try {
                             if (reqBody.data.object.description.substring(0, 6) == 'Repair') {
-                                businessType = 'repairTransfer';
+                                controllerType = 'repairTransfer';
                             }
                         } catch(err){
                             //Do nothing, leave default businessType undefined
                         }
-
                         break;
                 }
 
@@ -85,11 +77,11 @@ class RequestEvent {
 
                 break;
         }
-        return businessType;
+        return controllerType;
     }
 
-    getBusinessObject() {
-            return this.businessObject;
+    getControllerType() {
+            return this.controllerType;
     }
 
     getEventDetails() {

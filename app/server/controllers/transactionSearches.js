@@ -20,10 +20,10 @@ exports.payPalTransfers = () => {
 			//Iterate through transaction ID array searching Intacct for results
 			//Create new array of transaction IDs that do not exist in Intacct
 			getMissingTransactions(resultsArray)
-				.then( missingTransations => {
+				.then( missingTransactions => {
 
 					//Iterate through the "missing" transactions create array of Intacct Entry promises
-					var intacctRequests = missingTransations.map(singleTransactionID => {
+					var intacctRequests = missingTransactions.map(singleTransactionID => {
 
 						return new Promise((resolve, reject) => {
 
