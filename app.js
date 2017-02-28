@@ -19,6 +19,8 @@ var app = express();
 app.set('views', path.join(__dirname, 'app/client/views'));
 app.set('view engine', 'jade');
 
+app.use(express.static(__dirname + '/app/client/views'));
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));

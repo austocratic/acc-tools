@@ -3,6 +3,7 @@
 var request = require('request');
 
 var intacctTools = require('../libraries/intacct/index');
+var slack = require('../libraries/slack/index');
 var boSettings = require('./businessObjectsSettings');
 
 var stripeOperating = require("stripe")(
@@ -76,349 +77,91 @@ class Repair extends BusinessObject {
         super();
 
         this.props = props;
-
-        //Use logic to determine repair type, this will be used
-        this.setRepairType(this.props);
-    }
-
-    // Different repair types have different sets of logic required to gather all relevant properties required to
-    // create an accounting entry
-    setProps() {
-
-        return new Promise((resolve, reject) => {
-
-            var setZipPromise = this.setZip(this.props.latitude, this.props.longitude);
-
-            // Promises that gather needed properties
-            var setProcessingFeePromise, setPayoutDetailsPromise, setTaxDetailsPromise;
-
-            if (this.props.isRefund) {
-
-                setProcessingFeePromise = this.setProcessingFeeDetails(this.props.refundDetails.txnID, 'stripe');
-
-                switch (this.props.repairType) {
-
-                    case '0':
-
-                        //Depending on source, reach out to that source to set payout related properties
-                        setPayoutDetailsPromise = this.setPayoutRefundDetails(this.props.transferID, 'stripe');
-
-                        //Stripe metadata does have tax amount.  However, this does not always match actual amount charged
-                        setTaxDetailsPromise = this.setTaxRefundDetails(this.props.taxCollectionID, 'stripe');
-
-                        break;
-                    case '1':
-
-                        //Depending on source, reach out to that source to set payout related properties
-                        setPayoutDetailsPromise = this.setPayoutRefundDetails(this.props.transferID, 'stripe');
-                        break;
-                }
-
-            } else {
-                setProcessingFeePromise = this.setProcessingFeeDetails(this.props.txnID, 'stripe');
-
-                switch (this.props.repairType) {
-
-                    case '0':
-
-                        //Depending on source, reach out to that source to set payout related properties
-                        setPayoutDetailsPromise = this.setPayoutDetails(this.props.transferID, 'stripe');
-
-                        //Stripe metadata does have tax amount.  However, this does not always match actual amount charged
-                        setTaxDetailsPromise = this.setTaxDetails(this.props.taxCollectionID, 'stripe');
-
-                        break;
-                    case '1':
-
-                        //Depending on source, reach out to that source to set payout related properties
-                        setPayoutDetailsPromise = this.setPayoutDetails(this.props.transferID, 'stripe');
-
-                        break;
-                }
-            }
-
-            //Wait for all promises to resolve. These promises set values, so we do not need to take action from results
-            Promise.all([setZipPromise, setProcessingFeePromise, setPayoutDetailsPromise, setTaxDetailsPromise])
-                .then(()=> {
-                    resolve();
-                })
-                .catch(err => {
-                    reject('Error during prepareEntry(), failed to resolve Promise.all. Err message: ' + err);
-                })
-        });
-    }
-
-    setRepairType(toCheck) {
-        this.props.repairType = this.determineRepairType(toCheck);
-    }
-
-    determineRepairType(toCheck){
-
-        //TODO: I may want to define these IDs in a config JSON file to allow easy changing later
-        var repairType = '0';
-        //Repairs w/ transfer & without application fee = repair w/ no sales tax charged
-        // (Application fee), paid out in cash (Stripe transfer)
-        if (toCheck.transferID && toCheck.taxCollectionID == null) {
-            repairType = '1';
-
-            //Repairs w/ no transfer = repair paid out in iCredit (Separate transaction)
-        } else if (!toCheck.transferID) {
-            repairType = '2';
-        }
-        return repairType;
-    }
-
-    setProcessingFeeDetails(id, source) {
-        return new Promise((resolve, reject) => {
-            this.determineProcessingFeeDetails(id, source)
-                .then((processingFeeDetails)=> {
-                    this.props.processingFeeAmount = this.convertToDollar(processingFeeDetails.fee);
-                    resolve();
-                })
-                .catch( err =>{
-                    reject(err)
-                })
-        })
-    }
-
-    determineProcessingFeeDetails(id, source){
-        return new Promise((resolve, reject) => {
-            switch (source) {
-                case 'stripe':
-                    stripeOperating.balance.retrieveTransaction(
-                        id,
-                        //this.props.txnID,
-                        function (err, details) {
-                            if (err){
-                                reject(err)
-                            } else {
-                                resolve(details)
-                            }
-                        });
-                    break;
-
-                default:
-                    resolve('default');
-            }
-        })
-    }
-
-    setPayoutDetails(id, source) {
-        return new Promise((resolve, reject) => {
-            this.determinePayoutDetails(id, source)
-                .then((txnDetails)=> {
-                    this.props.payoutAmount = this.convertToDollar(txnDetails.amount);
-                    this.props.payoutTxnID = txnDetails.balance_transaction;
-                    resolve();
-                })
-                .catch( err =>{
-                    reject(err)
-                })
-        })
-    }
-
-    setPayoutRefundDetails(id, source) {
-        return new Promise((resolve, reject) => {
-            this.determinePayoutDetails(id, source)
-                .then( txnDetails => {
-
-                    this.props.refundDetails.payoutAmount = this.convertToDollar(txnDetails.reversals.data[0].amount);
-                    this.props.refundDetails.payoutTxnID = txnDetails.reversals.data[0].balance_transaction;
-                    resolve();
-                })
-                .catch( err =>{
-                    reject(err)
-                })
-        })
-    }
-
-    determinePayoutDetails(id, source){
-        return new Promise((resolve, reject) => {
-            switch (source) {
-                case 'stripe':
-                    stripeOperating.transfers.retrieve(
-                        id,
-                        //this.props.txnID,
-                        function (err, details) {
-                            if (err){
-                                reject(err)
-                            } else {
-                                resolve(details)
-                            }
-                        });
-
-                    break;
-
-                default:
-                    resolve('default');
-            }
-        })
-    }
-
-    setTaxDetails(id, source) {
-        return new Promise((resolve, reject) => {
-            this.determineHeldAmount(id, source)
-                .then( taxDetails => {
-                    this.props.amountHeld = this.convertToDollar(taxDetails.amount);
-                    this.props.taxTxnID = taxDetails.balance_transaction;
-                    resolve()
-                })
-                .catch( err =>{
-                    reject(err)
-                })
-        })
-    }
-
-    setTaxRefundDetails(id, source) {
-        return new Promise((resolve, reject) => {
-            this.determineHeldAmount(id, source)
-                .then( taxDetails => {
-
-                    this.props.refundDetails.amountHeld = this.convertToDollar(taxDetails.refunds.data[0].amount);
-                    this.props.refundDetails.taxTxnID = taxDetails.refunds.data[0].balance_transaction;
-                    resolve()
-                })
-                .catch( err =>{
-                    reject(err)
-                })
-        })
-    }
-
-    determineHeldAmount(id, source){
-        return new Promise((resolve, reject) => {
-            switch (source) {
-                case 'stripe':
-                    stripeOperating.applicationFees.retrieve(
-                        id,
-                        //this.props.txnID,
-                        function (err, details) {
-                            if (err){
-                                reject(err)
-                            } else {
-                                resolve(details)
-                            }
-                        });
-                    break;
-                default:
-                    resolve('default');
-            }
-        })
     }
 
     createAccountingEntry(){
         return new Promise((resolve, reject) => {
 
-            //Validate that isRefund flag is set and determine collection/refund
-            //collection/refund will determine setting in businessObjects
-            //set variables that depend on collection/refund
-            var year, month, day, direction, memo, chargeNetOfFee, chargeTxnID, appFeeTxnID, transferTxnID, amountHeld, amountPaid;
+            var year, month, day, chargeNetOfFee, chargeTxnID, appFeeTxnID, transferTxnID, amountHeld, amountPaid, amountTax;
 
-            if (this.props.isRefund) {
-                direction = 'refund';
+            year = this.props.date.getFullYear();
+            //.getMonth() returns 0-11, so add 1
+            month = this.props.date.getMonth() + 1;
+            day = this.props.date.getDate();
 
-                year = this.props.refundDetails.date.getFullYear();
-                //.getMonth() returns 0-11, so add 1
-                month = this.props.refundDetails.date.getMonth() + 1;
-                day = this.props.refundDetails.date.getDate();
+            //TODO: remove convertToDollar this needs to happen before declaring the BO
+            chargeNetOfFee = +(this.convertToDollar(this.props.chargeAmount) - this.props.processingFeeAmount).toFixed(2);
 
-                memo = 'REFUND: Repair: App Sale | Repair ID: ' + this.props.repairID + ' | Zip' +
-                    ' Code: ' + this.props.zip;
+            //TODO replace entry lines with .props references this is extra
+            chargeTxnID = this.props.txnID;
+            appFeeTxnID = this.props.taxTxnID;
+            transferTxnID = this.props.payoutTxnID;
 
-                //TODO: remove convertToDollar this needs to happen before declaring the BO
-                chargeNetOfFee = (this.convertToDollar(this.props.refundDetails.amount) - this.props.processingFeeAmount).toFixed(2);
-
-                chargeTxnID = this.props.refundDetails.txnID;
-                appFeeTxnID = this.props.refundDetails.taxTxnID;
-                transferTxnID = this.props.refundDetails.payoutTxnID;
-
-                amountHeld = this.props.refundDetails.amountHeld;
-                amountPaid = this.props.refundDetails.payoutAmount;
-
-
-            } else {
-                direction = 'collection';
-
-                year = this.props.date.getFullYear();
-                //.getMonth() returns 0-11, so add 1
-                month = this.props.date.getMonth() + 1;
-                day = this.props.date.getDate();
-
-                memo = 'Repair: App Sale | Repair ID: ' + this.props.repairID + ' | Zip' +
-                    ' Code: ' + this.props.zip;
-
-                //TODO: remove convertToDollar this needs to happen before declaring the BO
-                chargeNetOfFee = (this.convertToDollar(this.props.chargeAmount) - this.props.processingFeeAmount).toFixed(2);
-
-                chargeTxnID = this.props.txnID;
-                appFeeTxnID = this.props.taxTxnID;
-                transferTxnID = this.props.payoutTxnID;
-
-                amountHeld = this.props.amountHeld;
-                amountPaid = this.props.payoutAmount;
-            }
+            amountHeld = +this.props.amountHeld;
+            amountPaid = +this.props.payoutAmount;
+            amountTax = +this.props.tax;
 
             //Declare a new glEntry object
             var entry = new intacctTools.GlEntry();
 
             //Set the entry header
             //journal, memo, year, month, day, reference
-            entry.setHeader(boSettings.account.operating.journal, memo, year, month, day, this.props.chargeID);
+            entry.setHeader(boSettings.account.operating.journal, this.props.memo, year, month, day, this.props.chargeID);
 
             var netOfTaxAmount = (this.convertToDollar(this.props.chargeAmount) - this.props.tax).toFixed(2);
 
             var netPaid = (amountPaid - amountHeld).toFixed(2);
 
             //Default amount charged to technician = $0
-            var techFee = 0;
-            var labor = 0;
-            var part = 0;
+            var techFee = +0;
+            var labor = +0;
+            var part = +0;
 
             //taxAmount = amount withheld from payout, tax equals amount as a property
             //Any amount withheld greater than tax amount is amount charged to technician
             if ((this.props.amountHeld - this.props.tax).toFixed(2) > 0) {
-                techFee = (this.props.amountHeld - this.props.tax).toFixed(2)
+                techFee = +(this.props.amountHeld - this.props.tax).toFixed(2)
             }
 
-            var netPaidWithFee = (amountPaid - amountHeld + Number(techFee)).toFixed(2);
+            //var netPaidWithFee = (amountPaid - amountHeld + Number(techFee)).toFixed(2);
+            var netPaidWithFee = amountPaid - amountHeld + techFee;
 
             if (netPaidWithFee > 0) {
-                labor = boSettings.objects.repair.laborCost;
-
+                labor = Number(boSettings.objects.repair.laborCost);
                 if (netPaidWithFee < labor) {
                     labor = 0;
                 }
-
                 part = (netPaidWithFee - labor).toFixed(2);
             }
 
             //addLine(type, acct, doc, amt, dept, channel, memo, vend, cust, emp, prj, item)
             //if (chargeNetOfTax > 0) {
-                entry.addLine(boSettings.objects.repair[direction].entryDirection.chargeCash, boSettings.account.operating.accountGL, chargeTxnID, chargeNetOfFee, '', '', memo, '', '', '', '', '');
+            entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.chargeCash, boSettings.account.operating.accountGL, chargeTxnID, chargeNetOfFee, '', '', this.props.memo, '', '', '', '', '');
             //}
-            //if (this.props.taxAmount > 0) {
-                entry.addLine(boSettings.objects.repair[direction].entryDirection.feeCash, boSettings.account.operating.accountGL, appFeeTxnID, amountHeld, '', '', memo, '', '', '', '', '');
-            //}
-           // if (this.props.payoutAmount > 0) {
-                entry.addLine(boSettings.objects.repair[direction].entryDirection.transferCash, boSettings.account.operating.accountGL, transferTxnID, amountPaid, '', '', memo, '', '', '', '', '');
-           // }
-            if (this.props.tax > 0) {
-                entry.addLine(boSettings.objects.repair[direction].entryDirection.tax, boSettings.account.operating.taxGL, '', this.props.tax, '', '', memo, '', '', '', '', '');
+            if (amountHeld > 0) {
+                entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.feeCash, boSettings.account.operating.accountGL, appFeeTxnID, amountHeld, '', '', this.props.memo, '', '', '', '', '');
+            }
+            if (amountPaid > 0) {
+                entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.transferCash, boSettings.account.operating.accountGL, transferTxnID, amountPaid, '', '', this.props.memo, '', '', '', '', '');
+            }
+            if (amountTax > 0) {
+                entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.tax, boSettings.account.operating.taxGL, '', amountTax, '', '', this.props.memo, '', '', '', '', '');
             }
             if (netOfTaxAmount > 0) {
-                entry.addLine(boSettings.objects.repair[direction].entryDirection.sale, boSettings.objects.repair[direction].accounts.sale, '', netOfTaxAmount, '', boSettings.objects.repair.channel, memo, '', '', '', '', '');
+                entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.sale, boSettings.objects.repair[this.props.direction].accounts.sale, '', netOfTaxAmount, '', boSettings.objects.repair.channel, this.props.memo, '', '', '', '', '');
             }
             if (part > 0) {
-                entry.addLine(boSettings.objects.repair[direction].entryDirection.part, boSettings.objects.repair[direction].accounts.part, '', part, '', boSettings.objects.repair.channel, memo, '', '', '', '', '');
+                entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.part, boSettings.objects.repair[this.props.direction].accounts.part, '', part, '', boSettings.objects.repair.channel, this.props.memo, '', '', '', '', '');
             }
             if (labor > 0) {
-                entry.addLine(boSettings.objects.repair[direction].entryDirection.labor, boSettings.objects.repair[direction].accounts.labor, '', labor, '', boSettings.objects.repair.channel, memo, '', '', '', '', '');
+                entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.labor, boSettings.objects.repair[this.props.direction].accounts.labor, '', labor, '', boSettings.objects.repair.channel, this.props.memo, '', '', '', '', '');
             }
             if (this.props.processingFeeAmount > 0) {
                 //TODO: account is currently hard coded as "operating".  I should be able to read the event object here
-                entry.addLine(boSettings.objects.repair[direction].entryDirection.feeIncurred, boSettings.account.operating.processorFeeGL, '', this.props.processingFeeAmount, '', boSettings.objects.repair.channel, memo, boSettings.account.operating.processorVend, '', '', '', '');
+                entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.feeIncurred, boSettings.account.operating.processorFeeGL, '', this.props.processingFeeAmount, '', boSettings.objects.repair.channel, this.props.memo, boSettings.account.operating.processorVend, '', '', '', '');
             }
             if (techFee > 0) {
-                entry.addLine(boSettings.objects.repair[direction].entryDirection.feeCharged, boSettings.account.operating.processorFeeGL, '', techFee, '', boSettings.objects.repair.channel, memo, '', '', '', '', '');
+                entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.feeCharged, boSettings.account.operating.processorFeeGL, '', techFee, '', boSettings.objects.repair.channel, this.props.memo, '', '', '', '', '');
             }
 
             //Convert to XML
@@ -600,11 +343,39 @@ class Chargeback extends BusinessObject {
     }
 }
 
+class ChargebackAlert extends BusinessObject {
+    constructor(props) {
+        super();
+
+        this.props = props;
+    }
+
+    slackAlert(){
+        return new Promise((resolve, reject) => {
+
+            var alert = new slack.Alert( 'acc-tools',
+                'http://megaicons.net/static/img/icons_sizes/12/77/256/cat-grumpy-icon.png',
+                '#accounting-alerts',
+                'Default text',
+                '');
+
+            alert.sendToSlack(this.options)
+                .then( resObj => {
+                    resolve(resObj);
+                })
+                .catch(rejObj => {
+                    reject(rejObj);
+                })
+        })
+    }
+}
+
 
 module.exports = {
     BusinessObject: BusinessObject,
     Repair: Repair,
     BankTransfer: BankTransfer,
     DiscountedRepairTransfer: DiscountedRepairTransfer,
-    Chargeback: Chargeback
+    Chargeback: Chargeback,
+    ChargebackAlert: ChargebackAlert
 };
