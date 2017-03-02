@@ -8,11 +8,6 @@ var Cron = require('../classes/Cron');
 
 var google = require('../libraries/google/index');
 
-//For testing
-//var intacct = require('../libraries/intacct/index');
-//var paypal = require('../libraries/paypal/index');
-//var slack = require('../libraries/slack/index');
-
 var stripeOperating = require("stripe")(
     process.env.STRIPEKEYOPERATING
 );
@@ -61,8 +56,6 @@ exports.processEvent = (req, res) => {
             Promise.all(repairPromises)
                 .then( repairObjects =>{
 
-                    try {
-
                     var address = repairObjects.find( repairObj =>{
                         return repairObj.object == 'address';
                     });
@@ -99,29 +92,26 @@ exports.processEvent = (req, res) => {
                         processingFeeAmount = convertToDollar(balance_transaction.fee);
                     }
                         
-                        var BO = new BusinessObject.Repair({
-                            txnID:               incomingEvent.getEventDetails().balance_transaction,
-                            chargeAmount:        incomingEvent.getEventDetails().amount,
-                            taxTxnID:            appFeeTxnID,
-                            amountHeld:          appFeeAmount,
-                            payoutTxnID:         payoutTxnID,
-                            payoutAmount:        payoutAmount,
-                            processingFeeAmount: processingFeeAmount,
-                            chargeID:            incomingEvent.getEventDetails().id,
-                            memo:      'Repair: App Sale | Repair ID: ' + incomingEvent.getEventDetails().metadata.repair_id + ' | Zip' +
-                                ' Code: ' + address.zip,
-                            tip:                 incomingEvent.getEventDetails().metadata.tip,
-                            tax:                 incomingEvent.getEventDetails().metadata.tax,
-                            //repairID:            incomingEvent.getEventDetails().metadata.repair_id,
-                            date:                new Date(incomingEvent.getEventDetails().created * 1000),
-                            latitude:            incomingEvent.getEventDetails().metadata.latitude,
-                            longitude:           incomingEvent.getEventDetails().metadata.longitude,
-                            direction:           'collection',
-                            isRefund:            incomingEvent.getEventDetails().refunded
-                        });
-                    } catch(err) {
-                        console.log('ERROR Creating business object: ', err);
-                    }
+                    var BO = new BusinessObject.Repair({
+                        txnID:               incomingEvent.getEventDetails().balance_transaction,
+                        chargeAmount:        convertToDollar(incomingEvent.getEventDetails().amount),
+                        taxTxnID:            appFeeTxnID,
+                        amountHeld:          appFeeAmount,
+                        payoutTxnID:         payoutTxnID,
+                        payoutAmount:        payoutAmount,
+                        processingFeeAmount: processingFeeAmount,
+                        chargeID:            incomingEvent.getEventDetails().id,
+                        memo:      'Repair: App Sale | Repair ID: ' + incomingEvent.getEventDetails().metadata.repair_id + ' | Zip' +
+                            ' Code: ' + address.zip,
+                        tip:                 incomingEvent.getEventDetails().metadata.tip,
+                        tax:                 incomingEvent.getEventDetails().metadata.tax,
+                        //repairID:            incomingEvent.getEventDetails().metadata.repair_id,
+                        date:                new Date(incomingEvent.getEventDetails().created * 1000),
+                        latitude:            incomingEvent.getEventDetails().metadata.latitude,
+                        longitude:           incomingEvent.getEventDetails().metadata.longitude,
+                        direction:           'collection',
+                        isRefund:            incomingEvent.getEventDetails().refunded
+                    });
 
                     //Create entry documents and send to Intacct
                     BO.createAccountingEntry()
@@ -163,74 +153,74 @@ exports.processEvent = (req, res) => {
             Promise.all(repairRefundPromises)
                 .then( repairObjects =>{
 
-                    try {
+                    var address = repairObjects.find( repairObj =>{
+                        return repairObj.object == 'address';
+                    });
 
-                        var address = repairObjects.find( repairObj =>{
-                            return repairObj.object == 'address';
-                        });
+                    //Find the balance_transaction in the array of results
+                    var balance_transaction = repairObjects.find(stripeObj => {
+                        return stripeObj.object == 'balance_transaction';
+                    });
+                    //Find the transfer in the array of results
+                    var transfer = repairObjects.find(stripeObj => {
+                        return stripeObj.object == 'transfer';
+                    });
+                    //Find the application_fee in the array of results
+                    var application_fee = repairObjects.find(stripeObj => {
+                        return stripeObj.object == 'application_fee';
+                    });
 
-                        //Find the balance_transaction in the array of results
-                        var balance_transaction = repairObjects.find(stripeObj => {
-                            return stripeObj.object == 'balance_transaction';
-                        });
-                        //Find the transfer in the array of results
-                        var transfer = repairObjects.find(stripeObj => {
-                            return stripeObj.object == 'transfer';
-                        });
-                        //Find the application_fee in the array of results
-                        var application_fee = repairObjects.find(stripeObj => {
-                            return stripeObj.object == 'application_fee';
-                        });
+                    //Now determine if the transfer was refunded:
+                    var refundPromises = [];
 
-                        //Now determine if the transfer was refunded:
-                        var refundPromises = [];
+                    var convertToDollar = (amount) => {
+                        return (Math.abs(amount) / 100);
+                    };
 
-                        var convertToDollar = (amount) => {
-                            return (Math.abs(amount) / 100);
-                        };
+                    //Default values, may get overridden if values are available
+                    var balanceTxnID = '', balanceAmount = 0, appFeeTxnID = '', appFeeAmount = 0, payoutTxnID = '', payoutAmount = 0, processingFeeAmount = 0;
 
-                        //Default values, may get overridden if values are available
-                        var appFeeTxnID = '', appFeeAmount = 0, payoutTxnID = '', payoutAmount = 0, processingFeeAmount = 0;
-
-                        if (application_fee) {
-                            if (application_fee.refunds.data.length > 0) {
-                                appFeeTxnID = application_fee.refunds.data[0].balance_transaction;
-                                appFeeAmount = convertToDollar(application_fee.refunds.data[0].amount);
-                            }
+                    if (application_fee) {
+                        if (application_fee.refunds.data.length > 0) {
+                            appFeeTxnID = application_fee.refunds.data[0].balance_transaction;
+                            appFeeAmount = convertToDollar(application_fee.refunds.data[0].amount);
                         }
-                        if (transfer) {
-                            if (transfer.reversals.data.length > 0) {
-                                payoutTxnID = transfer.reversals.data[0].balance_transaction;
-                                payoutAmount = convertToDollar(transfer.reversals.data[0].amount);
-                            }
-                        }
-
-                        if (balance_transaction) {
-                            processingFeeAmount = convertToDollar(balance_transaction.fee);
-                        }
-
-                        var BO = new BusinessObject.Repair({
-                            txnID:               incomingEvent.getEventDetails().balance_transaction,
-                            chargeAmount:        incomingEvent.getEventDetails().amount,
-                            taxTxnID:            appFeeTxnID,
-                            amountHeld:          appFeeAmount,
-                            payoutTxnID:         payoutTxnID,
-                            payoutAmount:        payoutAmount,
-                            processingFeeAmount: processingFeeAmount,
-                            chargeID:            incomingEvent.getEventDetails().id,
-                            memo:      'REFUND: Repair: App Sale | Repair ID: ' + incomingEvent.getEventDetails().metadata.repair_id + ' | Zip' +
-                                                 ' Code: ' + address.zip,
-                            tip:                 incomingEvent.getEventDetails().metadata.tip,
-                            tax:                 incomingEvent.getEventDetails().metadata.tax,
-                            date:                new Date(incomingEvent.getEventDetails().created * 1000),
-                            latitude:            incomingEvent.getEventDetails().metadata.latitude,
-                            longitude:           incomingEvent.getEventDetails().metadata.longitude,
-                            direction:           'refund',
-                            isRefund:            incomingEvent.getEventDetails().refunded
-                        });
-                    } catch(err) {
-                        console.log('ERROR Creating business object: ', err);
                     }
+                    if (transfer) {
+                        if (transfer.reversals.data.length > 0) {
+                            payoutTxnID = transfer.reversals.data[0].balance_transaction;
+                            payoutAmount = convertToDollar(transfer.reversals.data[0].amount);
+                        }
+                    }
+
+                    console.log('balance transaction: ', JSON.stringify(balance_transaction));
+
+                    //Set attributes related to the
+                    if (balance_transaction) {
+                        balanceTxnID = balance_transaction.id;
+                        processingFeeAmount = convertToDollar(balance_transaction.fee);
+                        balanceAmount = convertToDollar(balance_transaction.amount);
+                    }
+
+                    var BO = new BusinessObject.Repair({
+                        txnID:               balanceTxnID,
+                        chargeAmount:        balanceAmount,
+                        taxTxnID:            appFeeTxnID,
+                        amountHeld:          appFeeAmount,
+                        payoutTxnID:         payoutTxnID,
+                        payoutAmount:        payoutAmount,
+                        processingFeeAmount: processingFeeAmount,
+                        chargeID:            incomingEvent.getEventDetails().id,
+                        memo:      'REFUND: Repair: App Sale | Repair ID: ' + incomingEvent.getEventDetails().metadata.repair_id + ' | Zip' +
+                                             ' Code: ' + address.zip,
+                        tip:                 incomingEvent.getEventDetails().metadata.tip,
+                        tax:                 incomingEvent.getEventDetails().metadata.tax,
+                        date:                new Date(incomingEvent.getEventDetails().created * 1000),
+                        latitude:            incomingEvent.getEventDetails().metadata.latitude,
+                        longitude:           incomingEvent.getEventDetails().metadata.longitude,
+                        direction:           'refund',
+                        isRefund:            incomingEvent.getEventDetails().refunded
+                    });
 
                     //Create entry documents and send to Intacct
                     BO.createAccountingEntry()
@@ -420,6 +410,7 @@ exports.processCron = () => {
 
 
 //Testing to delete
+/*
 exports.testing = () => {
 
     var balance_transaction = "txn_19SxCcF6QqXJdGIYJjuo3p2n";
@@ -431,5 +422,5 @@ exports.testing = () => {
         .catch((err)=>{
             console.log('TESTING: ERROR getting stripe response: ', err)
         })
-};
+};*/
 

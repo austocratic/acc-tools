@@ -90,7 +90,12 @@ class Repair extends BusinessObject {
             day = this.props.date.getDate();
 
             //TODO: remove convertToDollar this needs to happen before declaring the BO
-            chargeNetOfFee = +(this.convertToDollar(this.props.chargeAmount) - this.props.processingFeeAmount).toFixed(2);
+            chargeNetOfFee = +(this.props.chargeAmount - this.props.processingFeeAmount).toFixed(2);
+
+            console.log('chargeNetOfFee: ', chargeNetOfFee);
+            console.log('chargeAmount: ', this.props.chargeAmount);
+            console.log('processingFeeAmount: ', this.props.processingFeeAmount);
+
 
             //TODO replace entry lines with .props references this is extra
             chargeTxnID = this.props.txnID;
@@ -108,7 +113,7 @@ class Repair extends BusinessObject {
             //journal, memo, year, month, day, reference
             entry.setHeader(boSettings.account.operating.journal, this.props.memo, year, month, day, this.props.chargeID);
 
-            var netOfTaxAmount = (this.convertToDollar(this.props.chargeAmount) - this.props.tax).toFixed(2);
+            var netOfTaxAmount = (this.props.chargeAmount - this.props.tax).toFixed(2);
 
             var netPaid = (amountPaid - amountHeld).toFixed(2);
 
@@ -166,6 +171,8 @@ class Repair extends BusinessObject {
 
             //Convert to XML
             var convertedEntry = entry.convertToIntacctXML();
+
+            console.log(convertedEntry);
 
             entry.sendRequest(convertedEntry)
                 .then( resObj => {
@@ -271,7 +278,7 @@ class DiscountedRepairTransfer extends BusinessObject {
                 entry.addLine(boSettings.objects.discountedRepairTransfer.collection.entryDirection.labor, boSettings.objects.discountedRepairTransfer.collection.accounts.labor, this.props.txnID, laborCost, '', boSettings.objects.discountedRepairTransfer.channel, memo, '', '', '', '', '');
             }
             if (amount > 0) {
-                entry.addLine(boSettings.objects.discountedRepairTransfer.collection.entryDirection.cash, boSettings.account[this.props.subSource].bankGL, this.props.txnID, amount, '', '', memo, '', '', '', '', '');
+                entry.addLine(boSettings.objects.discountedRepairTransfer.collection.entryDirection.cash, boSettings.account[this.props.subSource].accountGL, this.props.txnID, amount, '', '', memo, '', '', '', '', '');
             }
 
             var convertedEntry = entry.convertToIntacctXML();
