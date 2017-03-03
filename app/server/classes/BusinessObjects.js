@@ -89,13 +89,7 @@ class Repair extends BusinessObject {
             month = this.props.date.getMonth() + 1;
             day = this.props.date.getDate();
 
-            //TODO: remove convertToDollar this needs to happen before declaring the BO
             chargeNetOfFee = +(this.props.chargeAmount - this.props.processingFeeAmount).toFixed(2);
-
-            console.log('chargeNetOfFee: ', chargeNetOfFee);
-            console.log('chargeAmount: ', this.props.chargeAmount);
-            console.log('processingFeeAmount: ', this.props.processingFeeAmount);
-
 
             //TODO replace entry lines with .props references this is extra
             chargeTxnID = this.props.txnID;
@@ -171,8 +165,6 @@ class Repair extends BusinessObject {
 
             //Convert to XML
             var convertedEntry = entry.convertToIntacctXML();
-
-            console.log(convertedEntry);
 
             entry.sendRequest(convertedEntry)
                 .then( resObj => {

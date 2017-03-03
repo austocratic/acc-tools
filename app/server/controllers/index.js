@@ -193,8 +193,6 @@ exports.processEvent = (req, res) => {
                         }
                     }
 
-                    console.log('balance transaction: ', JSON.stringify(balance_transaction));
-
                     //Set attributes related to the
                     if (balance_transaction) {
                         balanceTxnID = balance_transaction.id;
@@ -224,16 +222,14 @@ exports.processEvent = (req, res) => {
 
                     //Create entry documents and send to Intacct
                     BO.createAccountingEntry()
-                        .then( response => {
-                            console.log('Successfully posted: ', JSON.stringify(response));
+                        .then( () => {
                             res.status(200).send('Entry Posted')
                         })
                         .catch( rej => {
-                            console.log('Error creating entry: ', JSON.stringify(rej));
                             res.status(500).send('Failed to post transaction, error: ' + rej);
                         })
                 })
-                .catch((err)=>{
+                .catch( err =>{
                     console.log('TESTING: ERROR getting stripe response: ', err)
                 });
 
@@ -378,49 +374,19 @@ exports.processEvent = (req, res) => {
 //This function is called by entry.js on server boot
 exports.processCron = () => {
 
-    var delayedFunc1 = () => {
-
-        console.log('Test Cron Process 1 fired!')
-    };
-
-    var delayedFunc2 = () => {
-
-        console.log('Test Cron Process 2 fired!')
-    };
-
     //TODO: need to set cron delay here.  This should probably be set with a config file.  The UI will eventually
     // show a list of crons displaying as "active" or "inactive" & allow user to change the cron delay.
-    var cron1 = new Cron.Cron(43200000);
-    //var cron1 = new Cron.Cron(5000);
-
-    cron1.addProcess('function1', delayedFunc1);
-    cron1.addProcess('function2', delayedFunc2);
+    var cron = new Cron.Cron(43200000);
 
     //Add Paypal Transferes query to cron. This function does the following:
     //1. Search PayPal for recent transfer transactions
     //2. Identifies which do not exist in Intacct
     //3. Creates Transfer Business Objects for them
     //4. Posts them to accounting system
-    cron1.addProcess('paypalTransfers', transactionSearches.payPalTransfers);
+    cron.addProcess('paypalTransfers', transactionSearches.payPalTransfers);
 
     //Start the cron
-    cron1.startCron();
+    cron.startCron();
 
 };
-
-
-//Testing to delete
-/*
-exports.testing = () => {
-
-    var balance_transaction = "txn_19SxCcF6QqXJdGIYJjuo3p2n";
-
-    stripeOperating.balance.retrieveTransaction(balance_transaction)
-        .then((res)=>{
-            console.log('TESTING: got stripe response: ', res)
-        })
-        .catch((err)=>{
-            console.log('TESTING: ERROR getting stripe response: ', err)
-        })
-};*/
 

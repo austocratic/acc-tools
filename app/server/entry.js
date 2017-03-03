@@ -6,4 +6,3 @@ var controllersIndex = require('./controllers/index');
 controllersIndex.processCron();
 
 
-//controllersIndex.testing();
