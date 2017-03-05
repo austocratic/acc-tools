@@ -297,7 +297,7 @@ exports.processEvent = (req, res) => {
 
             //Stripe dispute objects have a property of array of balance_transactions
 
-            var txnID, amount, description, disputeFeeAmount;
+            var txnID, amount, description, disputeFeeAmount, source;
 
             //If event is a funds withdrawn event, find the negative balanceTransaction
             if (incomingEvent.getEventDetails().type = 'charge.dispute.withdrawn') {
@@ -307,6 +307,7 @@ exports.processEvent = (req, res) => {
                         amount = balanceTransaction.net;
                         description = balanceTransaction.description;
                         disputeFeeAmount = balanceTransaction.fee;
+                        source = balanceTransaction.source;
                     }
                 })
             }
@@ -319,6 +320,7 @@ exports.processEvent = (req, res) => {
                         amount = balanceTransaction.net;
                         description = balanceTransaction.description;
                         disputeFeeAmount = balanceTransaction.fee;
+                        source = balanceTransaction.source;
                     }
                 })
             }
@@ -328,7 +330,7 @@ exports.processEvent = (req, res) => {
                 description:      description, //ok
                 source:           incomingEvent.req.params.source, //ok
                 subSource:        incomingEvent.req.params.subSource, //ok
-                id:               incomingEvent.getEventDetails().id, //ok
+                id:               source,
                 amount:           convertToDollar(amount), //ok
                 disputeFeeAmount: Math.abs(convertToDollar(disputeFeeAmount)), //ok
                 date:             new Date(incomingEvent.getEventDetails().created * 1000), //ok
@@ -374,9 +376,19 @@ exports.processEvent = (req, res) => {
 //This function is called by entry.js on server boot
 exports.processCron = () => {
 
-    //TODO: need to set cron delay here.  This should probably be set with a config file.  The UI will eventually
-    // show a list of crons displaying as "active" or "inactive" & allow user to change the cron delay.
-    var cron = new Cron.Cron(43200000);
+    //Deployed to multiple servers, don't want requests to fire simultaneously.  Add seed value
+    function getRandomInt(min, max) {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min)) + min;
+    }
+
+    //Seed by 5-20 seconds
+    var seed = getRandomInt(5000, 20000);
+
+    //TODO: Set cron delay with a config file.  May eventually set w/ UI show a list of crons displaying as "active"
+    // or "inactive" & allow user to change the cron delay.
+    var cron = new Cron.Cron((43200000 + seed));
 
     //Add Paypal Transferes query to cron. This function does the following:
     //1. Search PayPal for recent transfer transactions

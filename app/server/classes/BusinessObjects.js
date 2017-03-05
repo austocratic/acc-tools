@@ -299,24 +299,23 @@ class Chargeback extends BusinessObject {
 
             var entry = new intacctTools.GlEntry();
 
-            //Entry Specfic variables:
             var year = this.props.date.getFullYear();
             //.getMonth() returns 0-11, so add 1
             var month = this.props.date.getMonth() + 1;
             var day = this.props.date.getDate();
 
-            var amount = this.props.amount;
+            var cashAmount = this.props.amount;
             var chargebackDirection;
 
-            //Determine if the charegback with withdrawing or returning funds
-            if (amount < 0) {
-                amount = -amount;
+            //Determine if the chargeback with withdrawing or returning funds
+            if (cashAmount < 0) {
+                cashAmount = -cashAmount;
                 chargebackDirection = "withdrawal"
             } else {
                 chargebackDirection = "reversal"
             }
 
-            var cashAmount = amount + this.props.disputeFeeAmount;
+            var grossAmount = cashAmount - this.props.disputeFeeAmount;
 
             entry.setHeader(boSettings.account[this.props.subSource].journal, this.props.memo, year, month, day, this.props.id);
 
@@ -327,7 +326,7 @@ class Chargeback extends BusinessObject {
             entry.addLine(boSettings.objects.chargeback[chargebackDirection].entryDirection.fee, boSettings.account[this.props.subSource].processorFeeGL, this.props.txnID, this.props.disputeFeeAmount, '', boSettings.account[this.props.subSource].chargebackChannel, this.props.memo, boSettings.account[this.props.subSource].processorVend, '', '', '', '');
 
             //Gross
-            entry.addLine(boSettings.objects.chargeback[chargebackDirection].entryDirection.gross, boSettings.objects.chargeback[chargebackDirection].accounts.gross, this.props.txnID, amount, '', boSettings.account[this.props.subSource].chargebackChannel, this.props.memo, '', '', '', '', '');
+            entry.addLine(boSettings.objects.chargeback[chargebackDirection].entryDirection.gross, boSettings.objects.chargeback[chargebackDirection].accounts.gross, this.props.txnID, grossAmount, '', boSettings.account[this.props.subSource].chargebackChannel, this.props.memo, '', '', '', '', '');
 
             var convertedEntry = entry.convertToIntacctXML();
 
