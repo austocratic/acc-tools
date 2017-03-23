@@ -24,7 +24,7 @@ node {
             sh "docker push icracked/acc-tools:${env.VERSION}"
 
             //Run - set env variables
-            sh "docker run --env-file=./.env -p 1234:8000 -d acc-tools"
+            sh "docker run --env-file=./env_acc-tools.env -p 1234:8000 -d acc-tools"
 
         stage 'Deploy'
 

@@ -11,7 +11,6 @@ class Cron {
 	_iterateAllProcesses() {
 		this.processList.forEach( process => {
 			process.action();
-			console.log('Called the action of process named: ', process.name)
 		})
 	}
 
@@ -19,23 +18,15 @@ class Cron {
 		this.interval = setInterval( () => {
 			this._iterateAllProcesses()
 		}, this.delay);
-
-		console.log('Started interval');
 	}
 
 	stopCron() {
 		clearInterval(this.interval);
-
-		console.log('Cleared interval: ', this.interval);
 	}
 
 	addProcess(name, process) {
 
-		console.log('Process being added: ', process);
-
 		var task = new Process(name, process);
-
-		console.log('declared a new object: ', task);
 
 		task.setProcessLogID(this._addToProcessLog(task));
 	}

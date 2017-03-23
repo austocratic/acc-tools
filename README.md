@@ -1,6 +1,6 @@
 ## Overview
 
-acc-tools is designed to capture and act on financial transactions.  Most commonly the action taken is to generate record a transaction in the accounting platform
+acc-tools is designed to capture and act on financial transactions.  Generally it records a transaction on the accounting platform
 
 ## Transaction flow
 
@@ -11,16 +11,15 @@ Platform transactions are captured by acc-tools by two main controllers:
 
 After capturing transactions the system uses logic (based on properties of event) to determine which additional controller should process the request
 
-
 ## Sample Transaction
 
-1. Stripe 'charge' event sent via POST to /api/stripe/operating.
+1. stripe 'charge' event sent via POST to /api/stripe/operating.
 
 2. processEvent - controller triggered by all POST requests to /api/stripe
 
 3. new RequestEvent - declare a standard event object
 
-4. RequestEvent.getControllerType - determine which controller to use
+4. requestEvent.getControllerType - determine which controller to use
 
 5. getControllerType return stripe.repair - controller has been determined
 
