@@ -23,7 +23,7 @@ node {
         stage 'Build docker image'
 
             // Always need to build something
-            sh "/usr/bin/env docker build \
+            sh "docker build \
                 --pull \
                 --no-cache=true \
                 --tag $docker.repo:$docker.buildTag ."
