@@ -5,6 +5,12 @@ properties([[$class: 'BuildDiscarderProperty',
 
 node {
 
+    def docker = [:]
+    docker.project = 'acc-tools'
+    docker.repo = 'icracked/acc-tools'
+    docker.tag = false
+    docker.buildTag = "${env.BRANCH_NAME}_${env.BUILD_NUMBER}"
+
     try {
 
         stage 'checkout'
@@ -16,12 +22,16 @@ node {
 
         stage 'Build docker image'
 
-            sh "docker build --tag icracked/acc-tools"
+            // Always need to build something
+            sh "/usr/bin/env docker build \
+                --pull \
+                --no-cache=true \
+                --tag $docker.repo:$docker.buildTag ."
 
         stage 'Push docker image'
 
             //Push to dockerhub
-            sh "docker push icracked/acc-tools:${env.VERSION}"
+            sh "docker push $docker.repo:${env.VERSION}"
 
             //Run - set env variables
             sh "docker run --env-file=./env_acc-tools.env -p 1234:8000 -d acc-tools"
