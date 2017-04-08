@@ -12,6 +12,7 @@ class Slack {
 
 	//TODO: need to add validation to ensure that this.options are set before calling
 	sendToSlack(params){
+
 		return new Promise( (resolve, reject) => {
 			request.post(params, (err, httpResponse, body) => {
 				if (err) {
@@ -25,21 +26,24 @@ class Slack {
 
 class Alert extends Slack {
 	constructor(
-		username = 'acc-tools',
-		icon_url = 'http://megaicons.net/static/img/icons_sizes/12/77/256/cat-grumpy-icon.png',
-		channel = '#accounting-alerts',
-		text = 'Default text',
-		attachments = ''
+		
+		//TODO: add validation
+		username,
+		icon_url,
+		channel,
+		text,
+		attachments
+		
 	)
 	 {
 		super();
-
+		 
 		this.username = username;
 		this.icon_url = icon_url;
 		this.channel = channel;
 		this.text = text;
 		this.attachments = attachments;
-
+		 
 		//Set options in format for passing to Slack
 		this._setOptions();
 	}
@@ -57,6 +61,8 @@ class Alert extends Slack {
 				attachments: this.attachments
 			}
 		}
+		
+		
 	}
 }
 

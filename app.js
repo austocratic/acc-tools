@@ -3,7 +3,7 @@
 //Set environment variables based on local .env file if USE_LOCAL_ENV is true
 //dev script sets USE_LOCAL_ENV, start does not
 if(process.env.USE_LOCAL_ENV) {
-  require('dotenv').config();
+  require('dotenv').config({path: './env_acc-tools.env'});
 }
 
 var express = require('express');

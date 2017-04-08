@@ -22,7 +22,6 @@ node {
 
         stage 'Build docker image'
 
-            // Always need to build something
             sh "docker build \
                 --pull \
                 --no-cache=true \

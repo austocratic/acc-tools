@@ -315,6 +315,7 @@ exports.processEvent = (req, res) => {
             //If event is a funds withdrawn event, find the positive balanceTransaction
             if (incomingEvent.getEventDetails().type = 'charge.dispute.funds_reinstated') {
                 incomingEvent.getEventDetails().balance_transactions.forEach(balanceTransaction => {
+                    
                     if (balanceTransaction.amount > 0) {
                         txnID = balanceTransaction.id;
                         amount = balanceTransaction.net;
@@ -350,11 +351,27 @@ exports.processEvent = (req, res) => {
 
         case 'chargebackAlert':
 
-            //TODO: I should consider removing chargebackAlert from Business objects.
-            //Controller could declare a new slack object directly (why flow through BO?)
-            var chargebackAlert = new BusinessObject.ChargebackAlert();
+            //Get & format the created date
+            var createdDate = new Date(incomingEvent.getEventDetails().created * 1000);
+            var formattedCreatedDate = (createdDate.getMonth() + 1) + '/' + createdDate.getDate() + '/' + createdDate.getFullYear();
 
-            chargeback.slackAlert()
+            //Get & format the evidence due date
+            var dueDate = new Date(incomingEvent.getEventDetails().evidence_details.due_by * 1000);
+            var formattedDueDate = (dueDate.getMonth() + 1) + '/' + dueDate.getDate() + '/' + dueDate.getFullYear();
+
+            var chargebackAlert = new BusinessObject.ChargebackAlert(
+                (incomingEvent.getEventDetails().amount / 100),
+                incomingEvent.getEventDetails().id,
+                formattedCreatedDate,
+                formattedDueDate,
+                incomingEvent.getEventDetails().reason,
+                incomingEvent.getEventDetails().charge,
+                //Route specific properties used to capture the event source (platform & specific platform account)
+                incomingEvent.getRouteParameters().source,
+                incomingEvent.getRouteParameters().subSource
+              );
+
+            chargebackAlert.slackAlert()
                 .then(()=> {
                     res.status(200).send('Alerted via Slack')
                 })
@@ -362,9 +379,7 @@ exports.processEvent = (req, res) => {
                     res.status(500).send('Failed to alert via Slack: ' + rej);
                 });
 
-
             break;
-
 
         default:
 

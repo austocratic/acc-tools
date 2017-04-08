@@ -87,6 +87,10 @@ class RequestEvent {
     getEventDetails() {
         return this.req.body.data.object;
     }
+
+    getRouteParameters() {
+        return this.req.params;
+    }
 }
 
 module.exports = {

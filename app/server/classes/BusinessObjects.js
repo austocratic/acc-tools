@@ -286,7 +286,6 @@ class DiscountedRepairTransfer extends BusinessObject {
     }
 }
 
-
 class Chargeback extends BusinessObject {
     constructor(props) {
         super();
@@ -315,7 +314,7 @@ class Chargeback extends BusinessObject {
                 chargebackDirection = "reversal"
             }
 
-            var grossAmount = cashAmount - this.props.disputeFeeAmount;
+            var grossAmount = (cashAmount - this.props.disputeFeeAmount).toFixed(2);
 
             entry.setHeader(boSettings.account[this.props.subSource].journal, this.props.memo, year, month, day, this.props.id);
 
@@ -342,22 +341,69 @@ class Chargeback extends BusinessObject {
 }
 
 class ChargebackAlert extends BusinessObject {
-    constructor(props) {
+    constructor(
+        amount,
+        disputeID,
+        dateCreated,
+        dateDue,
+        reason,
+        chargeID,
+        platformName,
+        platformAccount
+    ) {
         super();
 
-        this.props = props;
+        this.attachments = [{
+            "text": "Dispute details:",
+            "color": "#FFA500",
+            "fields": [
+                {
+                    "title": "Amount",
+                    "value": "$" + (amount),
+                    "short": true
+                },
+                {
+                    "title": "Stripe Dispute ID",
+                    "value": disputeID,
+                    "short": true
+                },
+                {
+                    "title": "Date Created",
+                    "value": dateCreated,
+                    "short": true
+                },
+                {
+                    "title": "Evidence Due Date",
+                    "value": dateDue,
+                    "short": true
+                }
+            ]
+        }];
+
+        this.text = '\n*Chargeback filed.*' +
+            '\nPlatform: ' + platformName +
+            '\nPlatform account: ' + platformAccount +
+            '\nLink to disputed charge: https://dashboard.stripe.com/payments/' + chargeID +
+            '\nDispute Reason: ' + reason;
+
+        //Slack properties set in business objects settings file: businessObjectsSettings.json
+        this.username = boSettings.objects.chargebackAlert.slackUserName;
+        this.icon_url = boSettings.objects.chargebackAlert.slackIcon;
+        this.channel = boSettings.objects.chargebackAlert.slackChannel;
     }
 
     slackAlert(){
         return new Promise((resolve, reject) => {
 
-            var alert = new slack.Alert( 'acc-tools',
-                'http://megaicons.net/static/img/icons_sizes/12/77/256/cat-grumpy-icon.png',
-                '#accounting-alerts',
-                'Default text',
-                '');
+            var alert = new slack.Alert(
+                this.username,
+                this.icon_url,
+                this.channel,
+                this.text,
+                this.attachments
+            );
 
-            alert.sendToSlack(this.options)
+            alert.sendToSlack(alert.options)
                 .then( resObj => {
                     resolve(resObj);
                 })

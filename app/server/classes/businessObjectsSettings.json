@@ -149,6 +149,11 @@
                 }
             }
 
+        },
+        "chargebackAlert": {
+            "slackUserName": "acc-tools",
+            "slackIcon": "http://megaicons.net/static/img/icons_sizes/12/77/256/cat-grumpy-icon.png",
+            "slackChannel": "#stripe_dispute_alerts"
         }
     }
 }
