@@ -174,7 +174,8 @@ exports.IntacctReadQuery =
     '<readByQuery>' +
     '<object>ObjectVar</object>' +
     '<query>QueryVar</query>' +
-    '<returnFormat>json</returnFormat>' +
+    '<fields>ReturnFieldsVar</fields>' +
+    '<returnFormat>xml</returnFormat>' +
     '</readByQuery>' +
     '</function>' +
     '</content>' +

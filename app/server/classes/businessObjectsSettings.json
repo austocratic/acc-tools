@@ -7,7 +7,8 @@
             "bankGL": "10204",
             "processorFeeGL": "60301",
             "taxGL": "23001",
-            "processorVend": "VEND00534"
+            "processorVend": "VEND00534",
+            "chargebackChannel": "30"
         },
         "shop": {
             "journal": "STRIPE",
@@ -15,7 +16,17 @@
             "bankGL": "10204",
             "processorFeeGL": "60301",
             "taxGL": "23001",
-            "processorVend": "VEND00534"
+            "processorVend": "VEND00534",
+            "chargebackChannel": "20"
+        },
+        "paypal": {
+            "journal": "CDJ",
+            "accountGL": "10301",
+            "bankGL": "10204",
+            "processorFeeGL": "60301",
+            "taxGL": "23001",
+            "processorVend": "VEND00301",
+            "chargebackChannel": ""
         }
     },
     "objects": {
@@ -111,6 +122,38 @@
                     "cash": "debit"
                 }
             }
+        },
+        "chargeback": {
+
+            "vendor": "",
+            "department": "",
+
+            "withdrawal": {
+                "accounts": {
+                    "gross": "43161"
+                },
+                "entryDirection": {
+                    "gross": "debit",
+                    "fee": "debit",
+                    "cash": "credit"
+                }
+            },
+            "reversal":{
+                "accounts": {
+                    "gross": "43161"
+                },
+                "entryDirection": {
+                    "gross": "credit",
+                    "fee": "credit",
+                    "cash": "debit"
+                }
+            }
+
+        },
+        "chargebackAlert": {
+            "slackUserName": "acc-tools",
+            "slackIcon": "http://megaicons.net/static/img/icons_sizes/12/77/256/cat-grumpy-icon.png",
+            "slackChannel": "#stripe_dispute_alerts"
         }
     }
 }

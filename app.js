@@ -1,8 +1,9 @@
 
+
 //Set environment variables based on local .env file if USE_LOCAL_ENV is true
 //dev script sets USE_LOCAL_ENV, start does not
 if(process.env.USE_LOCAL_ENV) {
-  require('dotenv').config();
+  require('dotenv').config({path: './env_acc-tools.env'});
 }
 
 var express = require('express');
@@ -10,7 +11,7 @@ var bodyParser = require('body-parser');
 var path = require('path');
 
 var index = require('./routes/index');
-
+var entry = require('./app/server/entry');
 
 var app = express();
 
@@ -18,12 +19,13 @@ var app = express();
 app.set('views', path.join(__dirname, 'app/client/views'));
 app.set('view engine', 'jade');
 
+app.use(express.static(__dirname + '/app/client/views'));
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use('/', index);
-
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
