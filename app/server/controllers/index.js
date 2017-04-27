@@ -334,7 +334,7 @@ exports.processEvent = (req, res) => {
                 id:               source,
                 amount:           convertToDollar(amount), //ok
                 disputeFeeAmount: Math.abs(convertToDollar(disputeFeeAmount)), //ok
-                date:             new Date(incomingEvent.getEventDetails().created * 1000), //ok
+                date:             new Date(incomingEvent.req.body.created * 1000), //ok
                 memo:             "Chargeback | Account: " + incomingEvent.req.params.subSource + " | Description: " +
                                   description
             });

@@ -264,10 +264,10 @@ class DiscountedRepairTransfer extends BusinessObject {
             entry.setHeader(boSettings.account.operating.journal, memo, year, month, day, this.props.transferID);
 
             if (amount > 0) {
-                entry.addLine(boSettings.objects.discountedRepairTransfer.collection.entryDirection.part, boSettings.objects.discountedRepairTransfer.collection.accounts.part, this.props.txnID, partCost, '', boSettings.objects.discountedRepairTransfer.channel, memo, '', '', '', '', '');
+                entry.addLine(boSettings.objects.discountedRepairTransfer.collection.entryDirection.part, boSettings.objects.discountedRepairTransfer.collection.accounts.part, '', partCost, '', boSettings.objects.discountedRepairTransfer.channel, memo, '', '', '', '', '');
             }
             if (amount > 0) {
-                entry.addLine(boSettings.objects.discountedRepairTransfer.collection.entryDirection.labor, boSettings.objects.discountedRepairTransfer.collection.accounts.labor, this.props.txnID, laborCost, '', boSettings.objects.discountedRepairTransfer.channel, memo, '', '', '', '', '');
+                entry.addLine(boSettings.objects.discountedRepairTransfer.collection.entryDirection.labor, boSettings.objects.discountedRepairTransfer.collection.accounts.labor, '', laborCost, '', boSettings.objects.discountedRepairTransfer.channel, memo, '', '', '', '', '');
             }
             if (amount > 0) {
                 entry.addLine(boSettings.objects.discountedRepairTransfer.collection.entryDirection.cash, boSettings.account[this.props.subSource].accountGL, this.props.txnID, amount, '', '', memo, '', '', '', '', '');
@@ -322,10 +322,10 @@ class Chargeback extends BusinessObject {
             entry.addLine(boSettings.objects.chargeback[chargebackDirection].entryDirection.cash, boSettings.account[this.props.subSource].accountGL, this.props.txnID, cashAmount, '', '', this.props.memo, '', '', '', '', '');
 
             //Fee
-            entry.addLine(boSettings.objects.chargeback[chargebackDirection].entryDirection.fee, boSettings.account[this.props.subSource].processorFeeGL, this.props.txnID, this.props.disputeFeeAmount, '', boSettings.account[this.props.subSource].chargebackChannel, this.props.memo, boSettings.account[this.props.subSource].processorVend, '', '', '', '');
+            entry.addLine(boSettings.objects.chargeback[chargebackDirection].entryDirection.fee, boSettings.account[this.props.subSource].processorFeeGL, '', this.props.disputeFeeAmount, '', boSettings.account[this.props.subSource].chargebackChannel, this.props.memo, boSettings.account[this.props.subSource].processorVend, '', '', '', '');
 
             //Gross
-            entry.addLine(boSettings.objects.chargeback[chargebackDirection].entryDirection.gross, boSettings.objects.chargeback[chargebackDirection].accounts.gross, this.props.txnID, grossAmount, '', boSettings.account[this.props.subSource].chargebackChannel, this.props.memo, '', '', '', '', '');
+            entry.addLine(boSettings.objects.chargeback[chargebackDirection].entryDirection.gross, boSettings.objects.chargeback[chargebackDirection].accounts.gross, '', grossAmount, '', boSettings.account[this.props.subSource].chargebackChannel, this.props.memo, '', '', '', '', '');
 
             var convertedEntry = entry.convertToIntacctXML();
 

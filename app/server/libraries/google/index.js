@@ -36,13 +36,19 @@ exports.getZip = (lat, lon) => {
 
 				//Using PostalCode's position (found above), resolve its value.  Prioritize "long name", then
 				// "short name" then default
-				resolve(
-					{object: 'address', zip: PostalCodePosition[0].long_name}
-					||
-					{object: 'address', zip: PostalCodePosition[0].short_name}
-					||
-					{object: 'address', zip: 'N/A'}
-				);
+				if (PostalCodePosition.length > 1) {
+					resolve(
+						{object: 'address', zip: PostalCodePosition[0].long_name}
+						||
+						{object: 'address', zip: PostalCodePosition[0].short_name}
+						||
+						{object: 'address', zip: 'N/A'}
+					);
+				} else {
+					resolve(
+						{object: 'address', zip: 'N/A'}
+					)
+				}
 			}
 		});
 	});
