@@ -160,7 +160,7 @@ class Repair extends BusinessObject {
                 entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.feeIncurred, boSettings.account.operating.processorFeeGL, '', this.props.processingFeeAmount, '', boSettings.objects.repair.channel, this.props.memo, boSettings.account.operating.processorVend, '', '', '', '');
             }
             if (techFee > 0) {
-                entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.feeCharged, boSettings.account.operating.processorFeeGL, '', techFee, '', boSettings.objects.repair.channel, this.props.memo, '', '', '', '', '');
+                entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.feeCharged, boSettings.account.operating.processorFeeGL, '', techFee, '', boSettings.objects.repair.channel, this.props.memo, boSettings.account.operating.processorVend, '', '', '', '');
             }
 
             //Convert to XML
@@ -171,6 +171,7 @@ class Repair extends BusinessObject {
                     resolve(resObj);
                 })
                 .catch(rejObj => {
+                    console.log('Error returned from accounting system: ', JSON.stringify(rejObj));
                     reject(rejObj);
                 })
         });
