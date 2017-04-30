@@ -36,7 +36,7 @@ exports.getZip = (lat, lon) => {
 
 				//Using PostalCode's position (found above), resolve its value.  Prioritize "long name", then
 				// "short name" then default
-				if (PostalCodePosition.length > 1) {
+				if (PostalCodePosition.length > 0) {
 					resolve(
 						{object: 'address', zip: PostalCodePosition[0].long_name}
 						||
