@@ -10,6 +10,7 @@ class Cron {
 
 	_iterateAllProcesses() {
 		this.processList.forEach( process => {
+			console.log('Iterating a cron process: ', JSON.stringify(this.process.action));
 			process.action();
 		})
 	}
