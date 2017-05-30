@@ -11,7 +11,7 @@ var paypal = require('../libraries/paypal/index');
 
 exports.payPalTransfers = () => {
 
-	getPayPalTransfers(25)
+	getPayPalTransfers(3)
 		.then( transferIDs => {
 
 			//Pull out transaction IDs and store in an array

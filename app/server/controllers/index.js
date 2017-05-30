@@ -403,10 +403,7 @@ exports.processCron = () => {
 
     //TODO: Set cron delay with a config file.  May eventually set w/ UI show a list of crons displaying as "active"
     // or "inactive" & allow user to change the cron delay.
-    //var cron = new Cron.Cron((43200000 + seed));
-
-    //TODO manually changed this delay for testing
-    var cron = new Cron.Cron((30000 + seed));
+    var cron = new Cron.Cron((43200000 + seed));
 
     //Add Paypal Transferes query to cron. This function does the following:
     //1. Search PayPal for recent transfer transactions
