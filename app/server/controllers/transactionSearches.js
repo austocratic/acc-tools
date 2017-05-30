@@ -11,12 +11,8 @@ var paypal = require('../libraries/paypal/index');
 
 exports.payPalTransfers = () => {
 
-	console.log('payPalTransfers called');
-
-	getPayPalTransfers(3)
+	getPayPalTransfers(25)
 		.then( transferIDs => {
-
-			console.log('gotpayPalTransfers, transferIDs: ', JSON.stringify(transferIDs));
 
 			//Pull out transaction IDs and store in an array
 			var resultsArray = getTransactionIDs(transferIDs);
@@ -71,8 +67,6 @@ exports.payPalTransfers = () => {
 	//Search PayPal for transfer transactions from the past few days
 	function getPayPalTransfers(daysBack) {
 
-		console.log('getPayPalTransfers, daysBack: ', daysBack);
-
 		return new Promise((resolve, reject) => {
 
 			//Determine date range to search
@@ -89,6 +83,7 @@ exports.payPalTransfers = () => {
 					resolve(res)
 				})
 				.catch((err)=> {
+					console.log('ERROR when sending PayPal request: ', err);
 					reject(err)
 				})
 		});
