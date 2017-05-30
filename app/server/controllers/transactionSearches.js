@@ -11,7 +11,7 @@ var paypal = require('../libraries/paypal/index');
 
 exports.payPalTransfers = () => {
 
-	getPayPalTransfers(3)
+	getPayPalTransfers(25)
 		.then( transferIDs => {
 
 			//Pull out transaction IDs and store in an array
@@ -83,6 +83,7 @@ exports.payPalTransfers = () => {
 					resolve(res)
 				})
 				.catch((err)=> {
+					console.log('ERROR when sending PayPal request: ', err);
 					reject(err)
 				})
 		});
