@@ -11,8 +11,12 @@ var paypal = require('../libraries/paypal/index');
 
 exports.payPalTransfers = () => {
 
+	console.log('payPalTransfers called');
+
 	getPayPalTransfers(3)
 		.then( transferIDs => {
+
+			console.log('gotpayPalTransfers, transferIDs: ', JSON.stringify(transferIDs));
 
 			//Pull out transaction IDs and store in an array
 			var resultsArray = getTransactionIDs(transferIDs);
@@ -66,6 +70,8 @@ exports.payPalTransfers = () => {
 
 	//Search PayPal for transfer transactions from the past few days
 	function getPayPalTransfers(daysBack) {
+
+		console.log('getPayPalTransfers, daysBack: ', daysBack);
 
 		return new Promise((resolve, reject) => {
 
