@@ -54,21 +54,21 @@ exports.processEvent = (req, res) => {
 
             //Resolve above promises
             Promise.all(repairPromises)
-                .then( repairObjects =>{
+                .then(repairObjects => {
 
-                    var address = repairObjects.find( repairObj =>{
+                    var address = repairObjects.find(repairObj => {
                         return repairObj.object == 'address';
                     });
 
-                    var balance_transaction = repairObjects.find( stripeObj =>{
+                    var balance_transaction = repairObjects.find(stripeObj => {
                         return stripeObj.object == 'balance_transaction';
                     });
 
-                    var transfer = repairObjects.find( stripeObj =>{
+                    var transfer = repairObjects.find(stripeObj => {
                         return stripeObj.object == 'transfer';
                     });
 
-                    var application_fee = repairObjects.find( stripeObj =>{
+                    var application_fee = repairObjects.find(stripeObj => {
                         return stripeObj.object == 'application_fee';
                     });
 
@@ -88,41 +88,41 @@ exports.processEvent = (req, res) => {
                         payoutAmount = convertToDollar(transfer.amount);
                     }
 
-                    if (balance_transaction){
+                    if (balance_transaction) {
                         processingFeeAmount = convertToDollar(balance_transaction.fee);
                     }
-                        
+
                     var BO = new BusinessObject.Repair({
-                        txnID:               incomingEvent.getEventDetails().balance_transaction,
-                        chargeAmount:        convertToDollar(incomingEvent.getEventDetails().amount),
-                        taxTxnID:            appFeeTxnID,
-                        amountHeld:          appFeeAmount,
-                        payoutTxnID:         payoutTxnID,
-                        payoutAmount:        payoutAmount,
+                        txnID: incomingEvent.getEventDetails().balance_transaction,
+                        chargeAmount: convertToDollar(incomingEvent.getEventDetails().amount),
+                        taxTxnID: appFeeTxnID,
+                        amountHeld: appFeeAmount,
+                        payoutTxnID: payoutTxnID,
+                        payoutAmount: payoutAmount,
                         processingFeeAmount: processingFeeAmount,
-                        chargeID:            incomingEvent.getEventDetails().id,
-                        memo:      'Repair: App Sale | Repair ID: ' + incomingEvent.getEventDetails().metadata.repair_id + ' | Zip' +
-                            ' Code: ' + address.zip,
-                        tip:                 incomingEvent.getEventDetails().metadata.tip,
-                        tax:                 incomingEvent.getEventDetails().metadata.tax,
+                        chargeID: incomingEvent.getEventDetails().id,
+                        memo: 'Repair: App Sale | Repair ID: ' + incomingEvent.getEventDetails().metadata.repair_id + ' | Zip' +
+                        ' Code: ' + address.zip,
+                        tip: incomingEvent.getEventDetails().metadata.tip,
+                        tax: incomingEvent.getEventDetails().metadata.tax,
                         //repairID:            incomingEvent.getEventDetails().metadata.repair_id,
-                        date:                new Date(incomingEvent.getEventDetails().created * 1000),
-                        latitude:            incomingEvent.getEventDetails().metadata.latitude,
-                        longitude:           incomingEvent.getEventDetails().metadata.longitude,
-                        direction:           'collection',
-                        isRefund:            incomingEvent.getEventDetails().refunded
+                        date: new Date(incomingEvent.getEventDetails().created * 1000),
+                        latitude: incomingEvent.getEventDetails().metadata.latitude,
+                        longitude: incomingEvent.getEventDetails().metadata.longitude,
+                        direction: 'collection',
+                        isRefund: incomingEvent.getEventDetails().refunded
                     });
 
                     //Create entry documents and send to Intacct
                     BO.createAccountingEntry()
-                        .then( response => {
+                        .then(response => {
                             res.status(200).send('Entry Posted')
                         })
-                        .catch( rej => {
+                        .catch(rej => {
                             res.status(500).send('Failed to post transaction, error: ' + rej);
                         })
                 })
-                .catch((err)=>{
+                .catch((err)=> {
                     console.log('TESTING: ERROR getting stripe response: ', err)
                 });
 
@@ -151,9 +151,9 @@ exports.processEvent = (req, res) => {
 
             //Resolve above promises
             Promise.all(repairRefundPromises)
-                .then( repairObjects =>{
+                .then(repairObjects => {
 
-                    var address = repairObjects.find( repairObj =>{
+                    var address = repairObjects.find(repairObj => {
                         return repairObj.object == 'address';
                     });
 
@@ -201,35 +201,35 @@ exports.processEvent = (req, res) => {
                     }
 
                     var BO = new BusinessObject.Repair({
-                        txnID:               balanceTxnID,
-                        chargeAmount:        balanceAmount,
-                        taxTxnID:            appFeeTxnID,
-                        amountHeld:          appFeeAmount,
-                        payoutTxnID:         payoutTxnID,
-                        payoutAmount:        payoutAmount,
+                        txnID: balanceTxnID,
+                        chargeAmount: balanceAmount,
+                        taxTxnID: appFeeTxnID,
+                        amountHeld: appFeeAmount,
+                        payoutTxnID: payoutTxnID,
+                        payoutAmount: payoutAmount,
                         processingFeeAmount: processingFeeAmount,
-                        chargeID:            incomingEvent.getEventDetails().id,
-                        memo:      'REFUND: Repair: App Sale | Repair ID: ' + incomingEvent.getEventDetails().metadata.repair_id + ' | Zip' +
-                                             ' Code: ' + address.zip,
-                        tip:                 incomingEvent.getEventDetails().metadata.tip,
-                        tax:                 incomingEvent.getEventDetails().metadata.tax,
-                        date:                new Date(incomingEvent.getEventDetails().created * 1000),
-                        latitude:            incomingEvent.getEventDetails().metadata.latitude,
-                        longitude:           incomingEvent.getEventDetails().metadata.longitude,
-                        direction:           'refund',
-                        isRefund:            incomingEvent.getEventDetails().refunded
+                        chargeID: incomingEvent.getEventDetails().id,
+                        memo: 'REFUND: Repair: App Sale | Repair ID: ' + incomingEvent.getEventDetails().metadata.repair_id + ' | Zip' +
+                        ' Code: ' + address.zip,
+                        tip: incomingEvent.getEventDetails().metadata.tip,
+                        tax: incomingEvent.getEventDetails().metadata.tax,
+                        date: new Date(incomingEvent.getEventDetails().created * 1000),
+                        latitude: incomingEvent.getEventDetails().metadata.latitude,
+                        longitude: incomingEvent.getEventDetails().metadata.longitude,
+                        direction: 'refund',
+                        isRefund: incomingEvent.getEventDetails().refunded
                     });
 
                     //Create entry documents and send to Intacct
                     BO.createAccountingEntry()
-                        .then( () => {
+                        .then(() => {
                             res.status(200).send('Entry Posted')
                         })
-                        .catch( rej => {
+                        .catch(rej => {
                             res.status(500).send('Failed to post transaction, error: ' + rej);
                         })
                 })
-                .catch( err =>{
+                .catch(err => {
                     console.log('TESTING: ERROR getting stripe response: ', err)
                 });
 
@@ -239,8 +239,17 @@ exports.processEvent = (req, res) => {
 
             //TODO: move this function somewhere else maybe into a utility function file
             //Other business objects currently rely on this conversion in the object need to remove
-            var convertToDollar = (amount) => {
+            var convertToDollar = amount => {
                 return (Math.abs(amount) / 100);
+            };
+
+            //Determine if the transfer is platform --> bank or bank --> platform, this changes account to debit & credit
+            var getTransferDirection = amountToTest => {
+                if (amountToTest < 0) {
+                    return "toPlatform"
+                } else {
+                    return "toBank"
+                }
             };
 
             var bankTransfer = new BusinessObject.BankTransfer({
@@ -248,6 +257,7 @@ exports.processEvent = (req, res) => {
                 description:     incomingEvent.getEventDetails().description,
                 source:          incomingEvent.req.params.source,
                 subSource:       incomingEvent.req.params.subSource,
+                transferDirection: getTransferDirection(incomingEvent.getEventDetails().amount),
                 transferID:      incomingEvent.getEventDetails().id,
                 amount:    convertToDollar(incomingEvent.getEventDetails().amount),
                 date:      new Date(incomingEvent.getEventDetails().created * 1000),
