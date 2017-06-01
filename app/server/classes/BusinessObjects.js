@@ -198,17 +198,9 @@ class BankTransfer extends BusinessObject {
             var day = this.props.date.getDate();
 
             var amount = this.props.amount;
-            var debitGL, creditGL, transferDirection;
-
-            //Determine if the transfer is platform --> bank or bank --> platform, this changes account to debit &
-            // credit
-            if (amount < 0) {
-                amount = -amount;
-                transferDirection = "toPlatform"
-            } else {
-                transferDirection = "toBank"
-            }
-
+            var transferDirection = this.props.transferDirection;
+            var debitGL, creditGL;
+            
             entry.setHeader(boSettings.account[this.props.subSource].journal, this.props.memo, year, month, day, this.props.transferID);
 
             //Bank
