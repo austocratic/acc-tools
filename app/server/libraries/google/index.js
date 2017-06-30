@@ -30,17 +30,17 @@ exports.getZip = (lat, lon) => {
 			} else {
 
 				//  Filter Results to find the address_component for postal code
-				var PostalCodePosition = address.results[0].address_components.filter(PostalCodePosition => {
-					return PostalCodePosition.types[0] == "postal_code"
+				var postalCodePosition = address.results[0].address_components.filter(position => {
+					return position.types[0] === "postal_code"
 				});
 
 				//Using PostalCode's position (found above), resolve its value.  Prioritize "long name", then
 				// "short name" then default
-				if (PostalCodePosition.length > 0) {
+				if (postalCodePosition.length > 0) {
 					resolve(
-						{object: 'address', zip: PostalCodePosition[0].long_name}
+						{object: 'address', zip: postalCodePosition[0].long_name}
 						||
-						{object: 'address', zip: PostalCodePosition[0].short_name}
+						{object: 'address', zip: postalCodePosition[0].short_name}
 						||
 						{object: 'address', zip: 'N/A'}
 					);

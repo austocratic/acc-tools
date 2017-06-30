@@ -82,7 +82,7 @@ class Repair extends BusinessObject {
     createAccountingEntry(){
         return new Promise((resolve, reject) => {
 
-            var year, month, day, chargeNetOfFee, chargeTxnID, appFeeTxnID, transferTxnID, amountHeld, amountPaid, amountTax;
+            var year, month, day, chargeNetOfFee, chargeTxnID, appFeeTxnID, transferTxnID, amountHeld, amountPaid, amountTax, amountTip;
 
             year = this.props.date.getFullYear();
             //.getMonth() returns 0-11, so add 1
@@ -99,6 +99,7 @@ class Repair extends BusinessObject {
             amountHeld = +this.props.amountHeld;
             amountPaid = +this.props.payoutAmount;
             amountTax = +this.props.tax;
+            amountTip = +this.props.tip;
 
             //Declare a new glEntry object
             var entry = new intacctTools.GlEntry();
@@ -107,7 +108,7 @@ class Repair extends BusinessObject {
             //journal, memo, year, month, day, reference
             entry.setHeader(boSettings.account.operating.journal, this.props.memo, year, month, day, this.props.chargeID);
 
-            var netOfTaxAmount = (this.props.chargeAmount - this.props.tax).toFixed(2);
+            var netOfTaxAmount = (this.props.chargeAmount - this.props.tax - amountTip).toFixed(2);
 
             var netPaid = (amountPaid - amountHeld).toFixed(2);
 
@@ -130,24 +131,32 @@ class Repair extends BusinessObject {
                 if (netPaidWithFee < labor) {
                     labor = 0;
                 }
-                part = (netPaidWithFee - labor).toFixed(2);
+                //Part cost = Net paid less fixed labor component and tip (tip will be recorded on another line)
+                part = (netPaidWithFee - labor - amountTip).toFixed(2);
             }
 
             //addLine(type, acct, doc, amt, dept, channel, memo, vend, cust, emp, prj, item)
             //if (chargeNetOfTax > 0) {
             entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.chargeCash, boSettings.account.operating.accountGL, chargeTxnID, chargeNetOfFee, '', '', this.props.memo, '', '', '', '', '');
             //}
-            if (amountHeld > 0) {
-                entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.feeCash, boSettings.account.operating.accountGL, appFeeTxnID, amountHeld, '', '', this.props.memo, '', '', '', '', '');
-            }
-            if (amountPaid > 0) {
-                entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.transferCash, boSettings.account.operating.accountGL, transferTxnID, amountPaid, '', '', this.props.memo, '', '', '', '', '');
+            if (netOfTaxAmount > 0) {
+                entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.sale, boSettings.objects.repair[this.props.direction].accounts.sale, '', netOfTaxAmount, '', boSettings.objects.repair.channel, this.props.memo, '', '', '', '', '');
             }
             if (amountTax > 0) {
                 entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.tax, boSettings.account.operating.taxGL, '', amountTax, '', '', this.props.memo, '', '', '', '', '');
             }
-            if (netOfTaxAmount > 0) {
-                entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.sale, boSettings.objects.repair[this.props.direction].accounts.sale, '', netOfTaxAmount, '', boSettings.objects.repair.channel, this.props.memo, '', '', '', '', '');
+            if (amountTip > 0) {
+                entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.tipCollected, boSettings.account.operating.tipGL, '', amountTip, '', '', this.props.memo, '', '', '', '', '');
+            }
+            if (this.props.processingFeeAmount > 0) {
+                //TODO: account is currently hard coded as "operating".  I should be able to read the event object here
+                entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.feeIncurred, boSettings.account.operating.processorFeeGL, '', this.props.processingFeeAmount, '', boSettings.objects.repair.channel, this.props.memo, boSettings.account.operating.processorVend, '', '', '', '');
+            }
+            if (amountPaid > 0) {
+                entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.transferCash, boSettings.account.operating.accountGL, transferTxnID, amountPaid, '', '', this.props.memo, '', '', '', '', '');
+            }
+            if (amountHeld > 0) {
+                entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.feeCash, boSettings.account.operating.accountGL, appFeeTxnID, amountHeld, '', '', this.props.memo, '', '', '', '', '');
             }
             if (part > 0) {
                 entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.part, boSettings.objects.repair[this.props.direction].accounts.part, '', part, '', boSettings.objects.repair.channel, this.props.memo, '', '', '', '', '');
@@ -155,9 +164,8 @@ class Repair extends BusinessObject {
             if (labor > 0) {
                 entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.labor, boSettings.objects.repair[this.props.direction].accounts.labor, '', labor, '', boSettings.objects.repair.channel, this.props.memo, '', '', '', '', '');
             }
-            if (this.props.processingFeeAmount > 0) {
-                //TODO: account is currently hard coded as "operating".  I should be able to read the event object here
-                entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.feeIncurred, boSettings.account.operating.processorFeeGL, '', this.props.processingFeeAmount, '', boSettings.objects.repair.channel, this.props.memo, boSettings.account.operating.processorVend, '', '', '', '');
+            if (amountTip > 0) {
+                entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.tipPaid, boSettings.account.operating.tipGL, '', amountTip, '', '', this.props.memo, '', '', '', '', '');
             }
             if (techFee > 0) {
                 entry.addLine(boSettings.objects.repair[this.props.direction].entryDirection.feeCharged, boSettings.account.operating.processorFeeGL, '', techFee, '', boSettings.objects.repair.channel, this.props.memo, boSettings.account.operating.processorVend, '', '', '', '');
@@ -165,6 +173,8 @@ class Repair extends BusinessObject {
 
             //Convert to XML
             var convertedEntry = entry.convertToIntacctXML();
+            
+            //console.log('Converted entry: ', convertedEntry);
 
             entry.sendRequest(convertedEntry)
                 .then( resObj => {
@@ -243,7 +253,9 @@ class DiscountedRepairTransfer extends BusinessObject {
             //TODO: remove convertToDollar this needs to happen before declaring the BO
             var amount = this.convertToDollar(this.props.amount).toFixed(2);
             var laborCost = Number(boSettings.objects.repair.laborCost).toFixed(2);
-            var partCost = (amount - laborCost).toFixed(2);
+            var amountTip = this.props.tip;
+            var partCost = (amount - laborCost - amountTip).toFixed(2);
+            
 
             //Check to see if calculated partCost is negative.
             if (partCost < 0) {
@@ -257,17 +269,20 @@ class DiscountedRepairTransfer extends BusinessObject {
             entry.setHeader(boSettings.account.operating.journal, memo, year, month, day, this.props.transferID);
 
             if (amount > 0) {
+                entry.addLine(boSettings.objects.discountedRepairTransfer.collection.entryDirection.cash, boSettings.account[this.props.subSource].accountGL, this.props.txnID, amount, '', '', memo, '', '', '', '', '');
+            }
+            if (amount > 0) {
                 entry.addLine(boSettings.objects.discountedRepairTransfer.collection.entryDirection.part, boSettings.objects.discountedRepairTransfer.collection.accounts.part, '', partCost, '', boSettings.objects.discountedRepairTransfer.channel, memo, '', '', '', '', '');
             }
             if (amount > 0) {
                 entry.addLine(boSettings.objects.discountedRepairTransfer.collection.entryDirection.labor, boSettings.objects.discountedRepairTransfer.collection.accounts.labor, '', laborCost, '', boSettings.objects.discountedRepairTransfer.channel, memo, '', '', '', '', '');
             }
-            if (amount > 0) {
-                entry.addLine(boSettings.objects.discountedRepairTransfer.collection.entryDirection.cash, boSettings.account[this.props.subSource].accountGL, this.props.txnID, amount, '', '', memo, '', '', '', '', '');
+            if (amountTip > 0) {
+                entry.addLine(boSettings.objects.discountedRepairTransfer.collection.entryDirection.tipPaid, boSettings.account[this.props.subSource].tipGL, '', amountTip, '', boSettings.objects.discountedRepairTransfer.channel, memo, '', '', '', '', '');
             }
-
+            
             var convertedEntry = entry.convertToIntacctXML();
-
+            
             entry.sendRequest(convertedEntry)
                 .then( resObj => {
                     resolve(resObj);
