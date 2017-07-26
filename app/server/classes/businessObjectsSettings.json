@@ -7,6 +7,7 @@
             "bankGL": "10204",
             "processorFeeGL": "60301",
             "taxGL": "23001",
+            "tipGL": "20031",
             "processorVend": "VEND00534",
             "chargebackChannel": "30"
         },
@@ -50,6 +51,8 @@
                     "feeCash": "debit",
                     "transferCash": "credit",
                     "tax": "credit",
+                    "tipCollected": "credit",
+                    "tipPaid": "debit",
                     "sale": "credit",
                     "part": "debit",
                     "labor": "debit",
@@ -69,6 +72,8 @@
                     "feeCash": "credit",
                     "transferCash": "debit",
                     "tax": "debit",
+                    "tipCollected": "debit",
+                    "tipPaid": "credit",
                     "sale": "debit",
                     "part": "credit",
                     "labor": "credit",
@@ -107,7 +112,8 @@
                 "entryDirection": {
                     "part": "debit",
                     "labor": "debit",
-                    "cash": "credit"
+                    "cash": "credit",
+                    "tipPaid": "credit"
                 }
             },
             "refund": {
@@ -119,7 +125,8 @@
                 "entryDirection": {
                     "part": "credit",
                     "labor": "credit",
-                    "cash": "debit"
+                    "cash": "debit",
+                    "tipPaid": "debit"
                 }
             }
         },

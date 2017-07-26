@@ -75,8 +75,7 @@ class IntacctRequest {
     _swapXMLwithJSON(replaceThisXML, replaceWithObj) {
 
         Object.keys(replaceWithObj).forEach(key => {
-
-            replaceThisXML = replaceThisXML.replace(new RegExp(key, 'g'), replaceWithObj[key]);
+            replaceThisXML = replaceThisXML.replace(new RegExp(key), replaceWithObj[key]);
         });
 
         return replaceThisXML;
@@ -177,6 +176,7 @@ class GlEntry extends IntacctRequest {
     };
 
     //Method to convert entryString to XML (Returns XML string)
+    //TODO looks like having 10+ lines is causing an error.  Looks like it searches line 10 and affects line 1
     convertToIntacctXML() {
 
         //-------Entry Header-------
@@ -192,10 +192,13 @@ class GlEntry extends IntacctRequest {
             //Create XML template for entry body line items
             let bodyTemplate = '';
 
+            let jeLine = '';
+
             //Build an XML body template with # of entry lines = entry object
             for (let line = 1; line <= this.lineCount; line++){
 
                 bodyTemplate = bodyTemplate +
+                //jeLine =
                     '<glentry>' +
                     '<trtype>TypeVar' + line + '</trtype>' +
                     '<amount>AmountVar' + line + '</amount>' +
@@ -217,7 +220,7 @@ class GlEntry extends IntacctRequest {
                     '<classid>ChannelVar' + line + '</classid>' +
                     '</glentry>';
             }
-
+            
             return super._swapXMLwithJSON(bodyTemplate, this.entryBody);
         })();
 
@@ -227,6 +230,8 @@ class GlEntry extends IntacctRequest {
             return intacctTemplates.IntacctFooter;
         })();
 
+        //console.log('Final template: ', convertedHeader + convertedBody + convertedFooter);
+        
         //Concatenate Entry pieces & return
         return convertedHeader + convertedBody + convertedFooter;
     };
