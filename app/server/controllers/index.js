@@ -101,6 +101,7 @@ exports.processEvent = (req, res) => {
                         payoutAmount: payoutAmount,
                         processingFeeAmount: processingFeeAmount,
                         chargeID: incomingEvent.getEventDetails().id,
+                        repairID: incomingEvent.getEventDetails().metadata.repair_id,
                         memo: 'Repair: App Sale | Repair ID: ' + incomingEvent.getEventDetails().metadata.repair_id + ' | Zip' +
                         ' Code: ' + address.zip,
                         tip: incomingEvent.getEventDetails().metadata.tip,

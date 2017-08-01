@@ -27,7 +27,15 @@ exports.getZip = (lat, lon) => {
 			//Check for zero results from Google
 			if (address.status == 'ZERO_RESULTS') {
 				resolve({object: 'address', zip: 'N/A'})
-			} else {
+			}
+
+			/* Removed before pushing
+			else if (address.status == 'OVER_QUERY_LIMIT') {
+				resolve({object: 'address', zip: 'N/A'})
+			}*/
+			else {
+
+				console.log('address: ', JSON.stringify(address));
 
 				//  Filter Results to find the address_component for postal code
 				var postalCodePosition = address.results[0].address_components.filter(position => {
