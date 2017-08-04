@@ -35,7 +35,7 @@ exports.getZip = (lat, lon) => {
 			}*/
 			else {
 
-				console.log('address: ', JSON.stringify(address));
+				//console.log('address: ', JSON.stringify(address));
 
 				//  Filter Results to find the address_component for postal code
 				var postalCodePosition = address.results[0].address_components.filter(position => {
