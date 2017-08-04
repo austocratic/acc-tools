@@ -101,6 +101,7 @@ class Repair extends BusinessObject {
             amountPaid = +this.props.payoutAmount;
             amountTax = +this.props.tax;
             amountTip = +this.props.tip;
+            amountTip = amountTip.toFixed(2);
 
             //Declare a new glEntry object
             var entry = new intacctTools.GlEntry();
@@ -110,6 +111,8 @@ class Repair extends BusinessObject {
             entry.setHeader(boSettings.account.operating.journal, this.props.memo, year, month, day, this.props.chargeID);
 
             var netOfTaxAmount = (this.props.chargeAmount - this.props.tax - amountTip).toFixed(2);
+
+            console.log('Testing, netOfTaxAmount: ', netOfTaxAmount);
 
             var netPaid = (amountPaid - amountHeld).toFixed(2);
 
