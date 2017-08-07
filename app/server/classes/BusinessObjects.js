@@ -264,9 +264,10 @@ class DiscountedRepairTransfer extends BusinessObject {
             //TODO: remove convertToDollar this needs to happen before declaring the BO
             var amount = this.convertToDollar(this.props.amount).toFixed(2);
             var laborCost = Number(boSettings.objects.repair.laborCost).toFixed(2);
-            var amountTip = this.props.tip;
-            var partCost = (amount - laborCost - amountTip).toFixed(2);
-            
+            //var amountTip = this.props.tip;
+
+            //var partCost = (amount - laborCost - amountTip).toFixed(2);
+            var partCost = (amount - laborCost).toFixed(2);
 
             //Check to see if calculated partCost is negative.
             if (partCost < 0) {
@@ -274,7 +275,7 @@ class DiscountedRepairTransfer extends BusinessObject {
                 partCost = amount;
             }
 
-            var memo = "Repair: discounted, Payout: Stripe Transfer | Stripe Account: " + this.props.subSource +
+            var memo = "Repair, Payout: Stripe Transfer | Stripe Account: " + this.props.subSource +
             " | Stripe Description:  " + this.props.description;
 
             entry.setHeader(boSettings.account.operating.journal, memo, year, month, day, this.props.transferID);
@@ -288,11 +289,14 @@ class DiscountedRepairTransfer extends BusinessObject {
             if (amount > 0) {
                 entry.addLine(boSettings.objects.discountedRepairTransfer.collection.entryDirection.labor, boSettings.objects.discountedRepairTransfer.collection.accounts.labor, '', laborCost, '', boSettings.objects.discountedRepairTransfer.channel, memo, '', '', '', '', '');
             }
+            /*
             if (amountTip > 0) {
                 entry.addLine(boSettings.objects.discountedRepairTransfer.collection.entryDirection.tipPaid, boSettings.account[this.props.subSource].tipGL, '', amountTip, '', boSettings.objects.discountedRepairTransfer.channel, memo, '', '', '', '', '');
-            }
+            }*/
             
             var convertedEntry = entry.convertToIntacctXML();
+
+            console.log('DiscountedRepairTransfer, convertedEntry: ', convertedEntry);
             
             entry.sendRequest(convertedEntry)
                 .then( resObj => {

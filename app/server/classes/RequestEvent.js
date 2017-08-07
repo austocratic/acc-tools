@@ -60,14 +60,25 @@ class RequestEvent {
                         controllerType = 'bankTransfer';
                         break;
                     case 'transfer.created':
+
                         //When we pay the tech more than amount collected from customer, we generate a stand alone
                         // transfer.  These transfers always have "Repair" in the description
                         try {
-                            if (reqBody.data.object.description.substring(0, 6) == 'Repair') {
+                            if (reqBody.data.object.description) {
+                                if (reqBody.data.object.description.substring(0, 6) == 'Repair') {
+                                    controllerType = 'repairTransfer';
+                                }
+                            }
+
+                            if (
+                                typeof reqBody.data.object.metadata.repair_id !== "undefined"
+                            ) {
+                                console.log('passed meta data check');
                                 controllerType = 'repairTransfer';
                             }
+
                         } catch(err){
-                            //Do nothing, leave default businessType undefined
+                            console.log('Error thrown when determining transfer.created type: ', err)
                         }
                         break;
                 }
