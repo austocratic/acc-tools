@@ -112,69 +112,126 @@ exports.payPalTransfers = () => {
 		}
 		return transactions;
 	}
+};
+/*
+async function getMissingTransactions(idArray) {
 
-	function getMissingTransactions(idArray) {
+	var detailsArray = await getIntacctDetails();
 
-		return new Promise((resolve, reject)=>{
+		//Create array of transaction IDs that do not exist in Intacct
+		var missingIDs = detailsArray.map( details => {
 
-			getIntacctDetails()
-				.then( detailsArray => {
+			//TODO: need to fix so response is not response.response
+			if(details.response.response.operation[0].result[0].data[0].$.count == 0){
+				return details.input
+			} else {
+				return undefined;
+			}
+		})
+		//Array will have undefined values if transaction does not exist.  Filter these out (we only
+		// want transactions in the array the do exist
+			.filter( value =>{
+				if (value !== undefined) {
+					return value
+				}
+			});
 
-					//Create array of transaction IDs that do not exist in Intacct
-					var missingIDs = detailsArray.map( details => {
+		//Resolve array of transaction IDs that do not exist in Intacct
+		return missingIDs;
 
-						//TODO: need to fix so response is not response.response
-						if(details.response.response.operation[0].result[0].data[0].$.count == 0){
-							return details.input
-						} else {
-							return undefined;
-						}
+	async function getIntacctDetails() {
+
+		//Iterate through transaction array creating promises for each & mapping those promises into promiseArray
+		var promiseArray = idArray.map(id => {
+
+			return new Promise((resolve, reject) => {
+
+				var referenceNo = "REFERENCENO = '" + id + "'";
+
+				var query = new intacct.Query('GLBATCH', referenceNo, 'REFERENCENO');
+
+				query.sendRequest(query.xmlQuery)
+					.then(res => {
+						resolve({input: id, response: res})
 					})
-					//Array will have undefined values if transaction does not exist.  Filter these out (we only
-					// want transactions in the array the do exist
+					.catch(err => {
+						reject(err)
+					})
+			});
+		});
+		Promise.all(promiseArray)
+			.then(res => {
+				return res
+			})
+			.catch(err => {
+				console.log('ERROR when calling getIntacctDetails promise.all statement: ', err)
+			})
+	}
+}*/
+
+function getMissingTransactions(idArray) {
+
+	return new Promise((resolve, reject)=>{
+
+		getIntacctDetails()
+			.then( detailsArray => {
+
+				//Create array of transaction IDs that do not exist in Intacct
+				var missingIDs = detailsArray.map( details => {
+
+					//TODO: need to fix so response is not response.response
+					if(details.response.response.operation[0].result[0].data[0].$.count == 0){
+						return details.input
+					} else {
+						return undefined;
+					}
+				})
+				//Array will have undefined values if transaction does not exist.  Filter these out (we only
+				// want transactions in the array the do exist
 					.filter( value =>{
 						if (value !== undefined) {
 							return value
 						}
 					});
 
-					//Resolve array of transaction IDs that do not exist in Intacct
-					resolve(missingIDs);
-				});
-		});
+				//Resolve array of transaction IDs that do not exist in Intacct
+				resolve(missingIDs);
+			});
+	});
 
-			function getIntacctDetails() {
+	function getIntacctDetails() {
+		return new Promise((resolve, reject) => {
+
+			//Iterate through transaction array creating promises for each & mapping those promises into promiseArray
+			var promiseArray = idArray.map(id => {
+
 				return new Promise((resolve, reject) => {
 
-					//Iterate through transaction array creating promises for each & mapping those promises into promiseArray
-					var promiseArray = idArray.map(id => {
+					var referenceNo = "REFERENCENO = '" + id + "'";
 
-						return new Promise((resolve, reject) => {
+					var query = new intacct.Query('GLBATCH', referenceNo, 'REFERENCENO');
 
-							var referenceNo = "REFERENCENO = '" + id + "'";
-
-							var query = new intacct.Query('GLBATCH', referenceNo, 'REFERENCENO');
-
-							query.sendRequest(query.xmlQuery)
-								.then(res => {
-									resolve({input: id, response: res})
-								})
-								.catch(err => {
-									reject(err)
-								})
-						});
-					});
-					Promise.all(promiseArray)
+					query.sendRequest(query.xmlQuery)
 						.then(res => {
-							resolve(res)
+							resolve({input: id, response: res})
 						})
 						.catch(err => {
 							reject(err)
 						})
 				});
-			}
+			});
+			Promise.all(promiseArray)
+				.then(res => {
+					resolve(res)
+				})
+				.catch(err => {
+					reject(err)
+				})
+		});
 	}
+}
 
 
-
+module.exports = {
+	getMissingTransactions: getMissingTransactions
 };

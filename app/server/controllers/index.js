@@ -14,7 +14,7 @@ var stripeOperating = require("stripe")(
 
 //This function is called by routes on a network request
 exports.processEvent = (req, res) => {
-
+    
     // Declare new Event Object
     // Constructor of RequestEvent uses logic to set a property "controllerType" which is read below
     var incomingEvent = new RequestEvent(req);
@@ -32,6 +32,26 @@ exports.processEvent = (req, res) => {
         case 'stripe.repair':
 
             var repairPromises = [];
+
+            /*
+            var arrayOfTransactions = [
+                'ch_1Am5HMF6QqXJdGIYgAwe0RWk'
+            ];*/
+            
+            var incomingChargeIDs = [];
+
+            incomingChargeIDs.push(incomingEvent.getEventDetails().id);
+
+            //Check to see if transaction exists in Intacct
+            transactionSearches.getMissingTransactions(incomingChargeIDs)
+                .then( missingTransactions => {
+                    console.log('missingTransactions: ', missingTransactions);
+
+                    if (missingTransactions.length === 0) {
+                        res.status(220).send('stripe.repair already recorded');
+
+                        return 'stripe.repair already recorded'
+                    }
 
             //If lat & lon properties exist, get the zip code of associate lat/lon
             if (incomingEvent.getEventDetails().metadata.latitude && incomingEvent.getEventDetails().metadata.longitude) {
@@ -126,6 +146,8 @@ exports.processEvent = (req, res) => {
                 .catch((err)=> {
                     console.log('TESTING: ERROR getting stripe response: ', err)
                 });
+
+            });
 
             break;
 
@@ -278,22 +300,38 @@ exports.processEvent = (req, res) => {
 
         case 'repairTransfer':
 
-            var discountedRepairTransfer = new BusinessObject.DiscountedRepairTransfer({
-                txnID:           incomingEvent.getEventDetails().balance_transaction,
-                description:     incomingEvent.getEventDetails().description,
-                source:          incomingEvent.req.params.source,
-                subSource:       incomingEvent.req.params.subSource,
-                transferID:      incomingEvent.getEventDetails().id,
-                amount:    incomingEvent.getEventDetails().amount,
-                date:      new Date(incomingEvent.getEventDetails().created * 1000)
-            });
+            var incomingTransferIDs = [];
 
-            discountedRepairTransfer.createAccountingEntry()
-                .then(()=>{
-                    res.status(200).send('Entry Posted')
-                })
-                .catch( rej =>{
-                    res.status(500).send('Failed to post transaction, error: ' + rej);
+            incomingTransferIDs.push(incomingEvent.getEventDetails().id);
+
+            //Check to see if transaction exists in Intacct
+            transactionSearches.getMissingTransactions(incomingTransferIDs)
+                .then( missingTransactions => {
+                    console.log('missingTransactions: ', missingTransactions);
+
+                    if (missingTransactions.length === 0) {
+                        res.status(220).send('stripe.repair already recorded');
+
+                        return 'stripe.repair already recorded'
+                    }
+
+                    var discountedRepairTransfer = new BusinessObject.DiscountedRepairTransfer({
+                        txnID: incomingEvent.getEventDetails().balance_transaction,
+                        description: incomingEvent.getEventDetails().description,
+                        source: incomingEvent.req.params.source,
+                        subSource: incomingEvent.req.params.subSource,
+                        transferID: incomingEvent.getEventDetails().id,
+                        amount: incomingEvent.getEventDetails().amount,
+                        date: new Date(incomingEvent.getEventDetails().created * 1000)
+                    });
+
+                    discountedRepairTransfer.createAccountingEntry()
+                        .then(()=> {
+                            res.status(200).send('Entry Posted')
+                        })
+                        .catch(rej => {
+                            res.status(500).send('Failed to post transaction, error: ' + JSON.stringify(rej));
+                        });
                 });
 
             break;
