@@ -193,9 +193,6 @@ exports.processEvent = (req, res) => {
                         return stripeObj.object == 'application_fee';
                     });
 
-                    //Now determine if the transfer was refunded:
-                    var refundPromises = [];
-
                     var convertToDollar = (amount) => {
                         return (Math.abs(amount) / 100);
                     };
@@ -236,7 +233,7 @@ exports.processEvent = (req, res) => {
                         ' Code: ' + address.zip,
                         tip: incomingEvent.getEventDetails().metadata.tip,
                         tax: incomingEvent.getEventDetails().metadata.tax,
-                        date: new Date(incomingEvent.getEventDetails().created * 1000),
+                        date: new Date(incomingEvent.getEventDetails().refunds.data[0].created * 1000),
                         latitude: incomingEvent.getEventDetails().metadata.latitude,
                         longitude: incomingEvent.getEventDetails().metadata.longitude,
                         direction: 'refund',
