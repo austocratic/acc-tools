@@ -48,7 +48,7 @@ exports.processEvent = (req, res) => {
                     console.log('missingTransactions: ', missingTransactions);
 
                     if (missingTransactions.length === 0) {
-                        res.status(220).send('stripe.repair already recorded');
+                        res.status(200).send('stripe.repair already recorded');
 
                         return 'stripe.repair already recorded'
                     }
