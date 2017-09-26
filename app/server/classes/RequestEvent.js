@@ -1,5 +1,6 @@
 'use strict';
 
+var slack = require('../libraries/slack/index');
 
 
 class RequestEvent {
@@ -30,11 +31,58 @@ class RequestEvent {
                 switch(reqBody.type) {
                     case 'charge.succeeded':
                         try {
+
+                            var thresholdForAlert = 30000;
+
+                            //Get & format the created date
+                            var createdDate = new Date(reqBody.data.object.created * 1000);
+                            var formattedCreatedDate = (createdDate.getMonth() + 1) + '/' + createdDate.getDate() + '/' + createdDate.getFullYear();
+                            
+                            //Slack Alert for charges over threshold
+                            if (reqBody.data.object.amount > thresholdForAlert){
+                                var chargeAlert = new slack.Alert(
+                                    'acc-tools',
+                                    'http://megaicons.net/static/img/icons_sizes/12/77/256/cat-grumpy-icon.png',
+                                    'stripe_payments',
+                                    'An In-App payment was charged in Stripe greater than $' + (Math.abs(thresholdForAlert) / 100),
+                                    [{
+                                        "text": "Charge Details:",
+                                        "color": "#FFA500",
+                                        "fields": [
+                                            {
+                                                "title": "Amount",
+                                                "value": "$" + (Math.abs(reqBody.data.object.amount) / 100),
+                                                "short": true
+                                            },
+                                            {
+                                                "title": "Repair ID",
+                                                "value": reqBody.data.object.metadata.repair_id,
+                                                "short": true
+                                            },
+                                            {
+                                                "title": "Date Charged",
+                                                "value": formattedCreatedDate,
+                                                "short": true
+                                            },
+                                            {
+                                                "title": "Link to charge",
+                                                "value": 'https://dashboard.stripe.com/payments/' + reqBody.data.object.id,
+                                                "short": true
+                                            }
+                                        ]
+                                    }]
+                                );
+
+                                //Send to Slack, no response or validation needed
+                                chargeAlert.sendToSlack(chargeAlert.options)
+                            }
+
+
                             if (reqBody.data.object.metadata.repair_id != null) {
                                 controllerType = 'stripe.repair';
                             }
                         } catch(err){
-                            //Do nothing, keep default of undefined
+                            console.log(err)
                         }
                         break;
                     case 'charge.refunded':

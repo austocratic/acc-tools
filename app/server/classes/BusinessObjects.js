@@ -128,7 +128,7 @@ class Repair extends BusinessObject {
             }
 
             //var netPaidWithFee = (amountPaid - amountHeld + Number(techFee)).toFixed(2);
-            var netPaidWithFee = amountPaid - amountHeld + techFee;
+            var netPaidWithFee = (amountPaid - amountHeld + techFee).toFixed(2);
 
             var amountTipPaid = 0;
 
@@ -435,6 +435,8 @@ class ChargebackAlert extends BusinessObject {
                 })
         })
     }
+
+ 
 }
 
 
