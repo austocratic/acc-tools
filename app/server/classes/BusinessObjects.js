@@ -134,11 +134,6 @@ class Repair extends BusinessObject {
 
             //Only set the tip payout amount if there was a transfer (a payout to the technician)
             if (netPaidWithFee > 0) {
-                //amountTipPaid = amountTip;
-                //Tip paid does not necessarily = tip calculated and passed in charge object (usually due to rounding)
-                //Calculate the tip
-                amountTipPaid = amountPaid - labor
-
                 labor = Number(boSettings.objects.repair.laborCost);
 
                 if (netPaidWithFee < labor) {
@@ -149,6 +144,11 @@ class Repair extends BusinessObject {
 
                 //New way to calculate part cost - this will allow us to key off of part
                 part = (netOfTaxAmount - labor).toFixed(2);
+                
+                //Tip paid does not necessarily = tip calculated and passed in charge object (usually due to rounding)
+                //Calculate the tip
+                //amountTipPaid = amountTip; <-- old way
+                amountTipPaid = amountPaid - labor - part - techFee
             }
 
             //addLine(type, acct, doc, amt, dept, channel, memo, vend, cust, emp, prj, item)
