@@ -140,11 +140,11 @@ class Repair extends BusinessObject {
                     labor = 0;
                 }
                 //Part cost = Net paid less fixed labor component and tip (tip will be recorded on another line)
-                //part = (netPaidWithFee - labor - amountTip).toFixed(2);
+                part = (netPaidWithFee - labor - amountTip).toFixed(2);
 
                 //New way to calculate part cost - this will allow us to key off of part
-                part = (netOfTaxAmount - labor).toFixed(2);
-                
+                //part = (netOfTaxAmount - labor).toFixed(2);
+
                 //Tip paid does not necessarily = tip calculated and passed in charge object (usually due to rounding)
                 //Calculate the tip
                 //amountTipPaid = amountTip; <-- old way
