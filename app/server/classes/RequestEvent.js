@@ -77,7 +77,6 @@ class RequestEvent {
                                 chargeAlert.sendToSlack(chargeAlert.options)
                             }
 
-
                             if (reqBody.data.object.metadata.repair_id != null) {
                                 controllerType = 'stripe.repair';
                             }

@@ -30,13 +30,8 @@ exports.processEvent = (req, res) => {
             break;
 
         case 'stripe.repair':
-
+            console.log('incoming stripe.repair');
             var repairPromises = [];
-
-            /*
-            var arrayOfTransactions = [
-                'ch_1Am5HMF6QqXJdGIYgAwe0RWk'
-            ];*/
             
             var incomingChargeIDs = [];
 
@@ -111,6 +106,7 @@ exports.processEvent = (req, res) => {
                     if (balance_transaction) {
                         processingFeeAmount = convertToDollar(balance_transaction.fee);
                     }
+
 
                     var BO = new BusinessObject.Repair({
                         txnID: incomingEvent.getEventDetails().balance_transaction,
