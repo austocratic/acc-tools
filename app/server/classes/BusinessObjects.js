@@ -147,8 +147,8 @@ class Repair extends BusinessObject {
 
                 //Tip paid does not necessarily = tip calculated and passed in charge object (usually due to rounding)
                 //Calculate the tip
-                //amountTipPaid = amountTip; <-- old way
-                amountTipPaid = amountPaid - labor - part - techFee
+                amountTipPaid = amountTip;
+                //amountTipPaid = amountPaid - labor - part - techFee <-- This way was causing issues
             }
 
             //addLine(type, acct, doc, amt, dept, channel, memo, vend, cust, emp, prj, item)
