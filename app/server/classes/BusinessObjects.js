@@ -127,13 +127,13 @@ class Repair extends BusinessObject {
                 techFee = +(this.props.amountHeld - this.props.tax).toFixed(2)
             }
 
-            //var netPaidWithFee = (amountPaid - amountHeld + Number(techFee)).toFixed(2);
             var netPaidWithFee = (amountPaid - amountHeld + techFee).toFixed(2);
 
             var amountTipPaid = 0;
 
             //Only set the tip payout amount if there was a transfer (a payout to the technician)
             if (netPaidWithFee > 0) {
+                //Set labor to the default amount ($40)
                 labor = Number(boSettings.objects.repair.laborCost);
 
                 if (netPaidWithFee < labor) {
@@ -142,13 +142,14 @@ class Repair extends BusinessObject {
                 //Part cost = Net paid less fixed labor component and tip (tip will be recorded on another line)
                 part = (netPaidWithFee - labor - amountTip).toFixed(2);
 
-                //New way to calculate part cost - this will allow us to key off of part
-                //part = (netOfTaxAmount - labor).toFixed(2);
-
-                //Tip paid does not necessarily = tip calculated and passed in charge object (usually due to rounding)
                 //Calculate the tip
                 amountTipPaid = amountTip;
-                //amountTipPaid = amountPaid - labor - part - techFee <-- This way was causing issues
+            }
+
+            //Check for "downsell" (iTech charges less than the calculated price)
+            //If downsell, adjust labor from the hard coded amount
+            if (amountPaid - labor - amountTipPaid < 0){
+                labor = amountPaid - amountTipPaid
             }
 
             //addLine(type, acct, doc, amt, dept, channel, memo, vend, cust, emp, prj, item)
