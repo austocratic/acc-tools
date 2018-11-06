@@ -136,7 +136,7 @@ exports.processEvent = (req, res) => {
                             res.status(200).send('Entry Posted')
                         })
                         .catch(rej => {
-                            res.status(500).send('Failed to post transaction, error: ' + rej);
+                            res.status(500).send('Failed to post transaction type ' + incomingEvent.getControllerType() + ' error: ' + JSON.stringify(rej));
                         })
                 })
                 .catch((err)=> {
